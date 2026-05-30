@@ -1,0 +1,93 @@
+*backup*
+*bck*
+
+# Environment variables (never commit secrets)
+.env
+.env.*
+!.env.example
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Test venv (scripts/test-s3-signature.sh)
+.venv-signature-test/
+
+# Docker
+docker-compose.override.yml
+
+# Kubernetes / local credentials
+k8s/secret.yaml
+secrets/
+**/client_secret*.json
+**/*.apps.googleusercontent.com.json
+
+# --- baseline: secrets-env-artifacts (synced across repos) ---
+
+*.bak*
+node_modules/
+dist/
+*.tsbuildinfo
+
+# Environment variables
+.env*
+# OS files
+*.bak
+node_modules/
+dist/
+.venv
+.venv*
+# Local credential files (never commit)
+*.tsbuildinfo
+# Security: Never commit keys or certificates
+keys/*
+*.pem
+*.key
+*.crt
+*.cer
+*.pfx
+*.p12
+*private*
+*.rsa
+*.dsa
+*.ec
+*.der
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+# Environments
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+# Local configuration
+local_config.py
+local_settings.py
+# Backup files
+*.bak
+*.backup*
+*.old
+# Compressed files
+*.zip
+*.tar.gz
+*.rar
+*.7z

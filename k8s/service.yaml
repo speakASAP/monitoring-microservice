@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: monitoring-microservice
+  namespace: statex-apps
+  labels:
+    app: monitoring-microservice
+spec:
+  selector:
+    app: monitoring-microservice
+  ports:
+    - name: http
+      port: 3395
+      targetPort: 3395
+  type: ClusterIP

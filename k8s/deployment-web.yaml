@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: monitoring-web
+  namespace: statex-apps
+  labels:
+    app: monitoring-web
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: monitoring-web
+  template:
+    metadata:
+      labels:
+        app: monitoring-web
+    spec:
+      containers:
+        - name: app
+          image: localhost:5000/monitoring-web:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3396
+          env:
+            - name: MONITORING_API_URL
+              value: "http://monitoring-microservice.statex-apps.svc.cluster.local:3395"
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "50m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 3396
+            initialDelaySeconds: 30
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 3396
+            initialDelaySeconds: 15
+            periodSeconds: 10

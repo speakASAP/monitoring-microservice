@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: monitoring-microservice-config
+  namespace: statex-apps
+  labels:
+    app: monitoring-microservice
+data:
+  NODE_ENV: "production"
+  SERVICE_NAME: "monitoring-microservice"
+  DOMAIN: "monitoring.alfares.cz"
+  PORT: "3395"
+  CORS_ORIGIN: "*"
+  DB_HOST: "db-server-postgres"
+  DB_PORT: "5432"
+  DB_NAME: "monitoring"
+  AUTH_SERVICE_URL: "http://auth-microservice.statex-apps.svc.cluster.local:3370"
+  LOGGING_SERVICE_URL: "http://logging-microservice.statex-apps.svc.cluster.local:3367"
+  NOTIFICATION_SERVICE_URL: "http://notifications-microservice.statex-apps.svc.cluster.local:3368"
+  PROMETHEUS_URL: "http://prometheus.statex-apps.svc.cluster.local:9090"
+  GRAFANA_URL: "http://grafana.statex-apps.svc.cluster.local:3000"
+  LOKI_URL: "http://loki.statex-apps.svc.cluster.local:3100"
+  ALERTMANAGER_URL: "http://alertmanager.statex-apps.svc.cluster.local:9093"

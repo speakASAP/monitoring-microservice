@@ -1,0 +1,15 @@
+FROM node:24-slim AS builder
+WORKDIR /app
+COPY web/package*.json ./
+RUN npm ci
+COPY web/ .
+RUN npm run build
+
+FROM node:24-slim
+WORKDIR /app
+COPY web/package*.json ./
+RUN npm ci --only=production
+COPY --from=builder /app/.next ./.next
+EXPOSE 3396
+ENV PORT=3396
+CMD ["npm", "run", "start"]

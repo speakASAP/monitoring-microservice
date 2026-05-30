@@ -1,0 +1,38 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: monitoring-microservice
+  namespace: statex-apps
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+spec:
+  ingressClassName: traefik
+  tls:
+    - hosts:
+        - monitoring.alfares.cz
+      secretName: monitoring-microservice-tls
+  rules:
+    - host: monitoring.alfares.cz
+      http:
+        paths:
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: monitoring-microservice
+                port:
+                  number: 3395
+          - path: /health
+            pathType: Prefix
+            backend:
+              service:
+                name: monitoring-microservice
+                port:
+                  number: 3395
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: monitoring-web
+                port:
+                  number: 3396

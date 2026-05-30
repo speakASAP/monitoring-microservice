@@ -1,0 +1,112 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+  namespace: statex-apps
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 30s
+      evaluation_interval: 30s
+
+    alerting:
+      alertmanagers:
+        - static_configs:
+            - targets: ['alertmanager:9093']
+
+    rule_files:
+      - /etc/prometheus/rules/*.yml
+
+    scrape_configs:
+      - job_name: 'prometheus'
+        static_configs:
+          - targets: ['localhost:9090']
+
+      - job_name: 'node-exporter'
+        static_configs:
+          - targets: ['192.168.88.53:9100']
+
+      - job_name: 'kube-state-metrics'
+        static_configs:
+          - targets: ['kube-state-metrics:8080']
+
+      - job_name: 'blackbox-http'
+        metrics_path: /probe
+        params:
+          module: [http_2xx]
+        static_configs:
+          - targets:
+            - http://auth-microservice:3370/health
+            - http://logging-microservice:3367/health
+            - http://notifications-microservice:3368/health
+            - http://ai-microservice:3380/health
+            - http://minio-microservice:9000/minio/health/live
+            - http://database-server-frontend:3390/health
+            - http://vault-microservice:8200/v1/sys/health
+            - http://monitoring-microservice:3395/health
+            - http://monitoring-web:3396/
+            - http://catalog-microservice:3200/health
+            - http://warehouse-microservice:3201/health
+            - http://orders-microservice:3203/health
+            - http://payments-microservice:3468/health
+            - http://suppliers-microservice:3202/health
+            - http://leads-microservice:4400/health
+            - http://marketing-microservice:4600/health
+            - http://prompts-microservice:4750/health
+            - http://agentic-email-processing-system:3374/health
+            - http://allegro-service:3000/health
+            - http://aukro-service:3700/health
+            - http://bazos-service:3000/health
+            - http://heureka-service:3800/health
+            - http://business-orchestrator:3390/health
+            - http://flipflop-service:3000/health
+            - http://crypto-ai-agent:3000/health
+            - http://beauty:3000/health
+            - http://marathon:3000/health
+            - http://shop-assistant:4500/health
+            - http://school-committee:4800/health
+            - http://statex:3000/health
+            - http://speakasap:3000/health
+            - http://speakasap-content:4201/health
+            - http://speakasap-certification:4202/health
+            - http://speakasap-assessment:4203/health
+            - http://speakasap-course:4205/health
+            - http://speakasap-education:4206/health
+            - http://speakasap-user:4207/health
+            - http://speakasap-payment:4208/health
+            - http://speakasap-notification:4209/health
+            - http://speakasap-api-gateway:4210/health
+            - http://speakasap-salary:4212/health
+            - http://speakasap-financial:4213/health
+            - http://rehtani:4601/
+            - http://statex-ecosystem:4710/health
+        relabel_configs:
+          - source_labels: [__address__]
+            target_label: __param_target
+          - source_labels: [__param_target]
+            target_label: instance
+          - target_label: __address__
+            replacement: blackbox-exporter:9115
+
+      - job_name: 'kubernetes-pods'
+        kubernetes_sd_configs:
+          - role: pod
+            namespaces:
+              names: ['statex-apps']
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+            action: keep
+            regex: true
+          - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+            action: replace
+            target_label: __metrics_path__
+            regex: (.+)
+          - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
+            action: replace
+            regex: ([^:]+)(?::\d+)?;(\d+)
+            replacement: $1:$2
+            target_label: __address__
+          - source_labels: [__meta_kubernetes_pod_name]
+            target_label: pod
+          - source_labels: [__meta_kubernetes_namespace]
+            target_label: namespace
