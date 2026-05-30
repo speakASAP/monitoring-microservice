@@ -58,6 +58,10 @@ Do **not** use `kubectl rollout restart deployment/prometheus` — RWO volume lo
 
 Scrape targets: `k8s/prometheus/configmap-config.yaml` (blackbox HTTP probes for ecosystem `/health` endpoints).
 
+### Dashboard API calls
+
+The Next.js dashboard runs in the browser and must call **`/api/*` on the same origin** (`https://monitoring.alfares.cz/api/...` via ingress). Do not point the frontend at internal cluster URLs (`monitoring-microservice:3395`) — the browser cannot resolve them and the UI falls back to empty/mock data.
+
 ## Dependencies
 
 | Service | Usage |

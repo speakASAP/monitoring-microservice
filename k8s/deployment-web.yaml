@@ -21,9 +21,6 @@ spec:
           imagePullPolicy: Always
           ports:
             - containerPort: 3396
-          env:
-            - name: MONITORING_API_URL
-              value: "http://monitoring-microservice.statex-apps.svc.cluster.local:3395"
           resources:
             requests:
               memory: "128Mi"
