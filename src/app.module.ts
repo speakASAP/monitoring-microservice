@@ -8,6 +8,7 @@ import { HealthController } from './health/health.controller';
 import { AlertsModule } from './alerts/alerts.module';
 import { ServicesModule } from './services/services.module';
 import { WebhooksModule } from './webhooks/webhooks.module';
+import { DigestModule } from './digest/digest.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { WebhooksModule } from './webhooks/webhooks.module';
     AlertsModule,
     ServicesModule,
     WebhooksModule,
+    DigestModule,
   ],
   controllers: [HealthController],
 })

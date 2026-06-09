@@ -16,4 +16,10 @@ export default () => ({
   loki: { url: process.env.LOKI_URL || 'http://loki:3100' },
   alertmanager: { url: process.env.ALERTMANAGER_URL || 'http://alertmanager:9093' },
   jwtSecret: process.env.JWT_SECRET || '',
+  digest: {
+    enabled: process.env.DAILY_DIGEST_ENABLED !== 'false',
+    cron: process.env.DAILY_DIGEST_CRON || '0 8 * * *',
+    telegramChatId: process.env.TELEGRAM_CHAT_ID || '',
+    notificationsToken: process.env.NOTIFICATION_SERVICE_TOKEN || '',
+  },
 });

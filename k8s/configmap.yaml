@@ -21,3 +21,6 @@ data:
   GRAFANA_URL: "http://grafana.statex-apps.svc.cluster.local:3000"
   LOKI_URL: "http://loki.statex-apps.svc.cluster.local:3100"
   ALERTMANAGER_URL: "http://alertmanager.statex-apps.svc.cluster.local:9093"
+  DAILY_DIGEST_ENABLED: "true"
+  DAILY_DIGEST_CRON: "0 8 * * *"
+  TELEGRAM_CHAT_ID: "694579866"

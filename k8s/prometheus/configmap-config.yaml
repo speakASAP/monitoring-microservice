@@ -65,6 +65,7 @@ data:
             - http://marathon:3000/health
             - http://shop-assistant:4500/health
             - http://school-committee:4800/health
+            - http://candidate-blueprism:4850/
             - http://statex:3000/health
             - http://speakasap:3000/health
             - http://speakasap-content:4201/health
