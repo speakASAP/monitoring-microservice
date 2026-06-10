@@ -14,7 +14,7 @@ A scheduled Telegram digest sent every morning from `monitoring-microservice`. I
 A new `DigestModule` in `src/digest/` with three focused files:
 
 - **`ServiceHealthSnapshotEntity`** — TypeORM entity backed by `monitoring.service_health_snapshots`. One row per day, JSONB column holding all services' health state.
-- **`NotificationsClient`** — thin `axios` HTTP client to notifications-microservice. Mirrors the business-orchestrator pattern: reads `notifications.url`, `digest.notificationsToken`, `digest.telegramChatId` from config, sends `POST /notifications/send`.
+- **`NotificationsClient`** — thin `axios` HTTP client to notifications-microservice. Mirrors the runlayer pattern: reads `notifications.url`, `digest.notificationsToken`, `digest.telegramChatId` from config, sends `POST /notifications/send`.
 - **`DailyDigestService`** — `@Cron`-driven orchestrator. Polls health, diffs against yesterday, upserts snapshot, sends Telegram message.
 
 `DigestModule` imports `ServicesModule` (zero changes to it) and `TypeOrmModule.forFeature([ServiceHealthSnapshotEntity])`. `AppModule` adds `DigestModule`.

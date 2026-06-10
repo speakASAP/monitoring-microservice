@@ -42,7 +42,7 @@ export const ECOSYSTEM_SERVICES: EcosystemServiceDefinition[] = [
   { name: 'heureka-service', port: 3800, domain: 'heureka.alfares.cz', category: 'business', kind: 'service' },
 
   // Orchestration
-  { name: 'business-orchestrator', port: 3390, domain: 'orchestrator.alfares.cz', category: 'orchestration', kind: 'service' },
+  { name: 'runlayer', port: 3390, domain: 'runlayer.alfares.cz', category: 'orchestration', kind: 'service' },
 
   // Applications
   { name: 'flipflop-service', port: 3000, domain: 'flipflop.alfares.cz', category: 'application', kind: 'service' },

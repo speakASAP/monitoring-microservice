@@ -58,7 +58,7 @@ data:
             - http://aukro-service:3700/health
             - http://bazos-service:3000/health
             - http://heureka-service:3800/health
-            - http://business-orchestrator:3390/health
+            - http://runlayer:3390/health
             - http://flipflop-service:3000/health
             - http://crypto-ai-agent:3000/health
             - http://beauty:3000/health

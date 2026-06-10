@@ -641,7 +641,7 @@ In `k8s/configmap.yaml`, add inside the `data:` block:
   TELEGRAM_CHAT_ID: ""
 ```
 
-Replace `""` for `TELEGRAM_CHAT_ID` with your actual Telegram chat ID (the numeric ID of the chat where you want the digest sent — same value used in `business-orchestrator`).
+Replace `""` for `TELEGRAM_CHAT_ID` with your actual Telegram chat ID (the numeric ID of the chat where you want the digest sent — same value used in `runlayer`).
 
 - [ ] **Step 2: Add secret to external-secret.yaml**
 
@@ -657,7 +657,7 @@ In `k8s/external-secret.yaml`, add inside the `spec.data:` array:
 - [ ] **Step 3: Add the secret to Vault**
 
 ```bash
-kubectl -n statex-apps exec deployment/business-orchestrator -- \
+kubectl -n statex-apps exec deployment/monitoring-microservice -- \
   vault kv patch secret/prod/monitoring-microservice \
   NOTIFICATION_SERVICE_TOKEN="<token-value-from-notifications-microservice>"
 ```
@@ -665,7 +665,7 @@ kubectl -n statex-apps exec deployment/business-orchestrator -- \
 To find the correct token value, check how other services authenticate to notifications-microservice:
 
 ```bash
-kubectl -n statex-apps exec deployment/business-orchestrator -- \
+kubectl -n statex-apps exec deployment/monitoring-microservice -- \
   env | grep NOTIFICATION
 ```
 

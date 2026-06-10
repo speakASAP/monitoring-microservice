@@ -10,7 +10,7 @@ export const MOCK_SERVICES = [
   { name: 'payments-microservice', category: 'ecommerce', healthy: true, responseTimeMs: 38, domain: 'payments.alfares.cz' },
   { name: 'allegro-service', category: 'business', healthy: true, responseTimeMs: 52, domain: 'allegro.alfares.cz' },
   { name: 'heureka-service', category: 'business', healthy: true, responseTimeMs: 44, domain: 'heureka.alfares.cz' },
-  { name: 'business-orchestrator', category: 'orchestration', healthy: true, responseTimeMs: 95, domain: 'orchestrator.alfares.cz' },
+  { name: 'runlayer', category: 'orchestration', healthy: true, responseTimeMs: 95, domain: 'runlayer.alfares.cz' },
   { name: 'leads-microservice', category: 'business', healthy: true, responseTimeMs: 41, domain: 'leads.alfares.cz' },
   { name: 'marketing-microservice', category: 'business', healthy: true, responseTimeMs: 58, domain: 'marketing.alfares.cz' },
   { name: 'speakasap-api-gateway', category: 'speakasap', healthy: true, responseTimeMs: 63, domain: 'speakasap.alfares.cz' },
