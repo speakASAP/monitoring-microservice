@@ -43,6 +43,7 @@ export const ECOSYSTEM_SERVICES: EcosystemServiceDefinition[] = [
 
   // Orchestration
   { name: 'runlayer', port: 3390, domain: 'runlayer.alfares.cz', category: 'orchestration', kind: 'service' },
+  { name: 'goalkeeper', port: 3392, domain: 'goalkeeper.alfares.cz', category: 'orchestration', kind: 'service' },
 
   // Applications
   { name: 'flipflop-service', port: 3000, domain: 'flipflop.alfares.cz', category: 'application', kind: 'service' },
