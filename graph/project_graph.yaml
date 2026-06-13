@@ -2,6 +2,15 @@ nodes:
   - id: VISION-001
     type: Vision
     path: 01_vision/VISION.md
+  - id: ROADMAP-001
+    type: Roadmap
+    path: 08_roadmap/ROADMAP.md
+  - id: MS-001
+    type: Milestone
+    path: 09_milestones/MS-001-ips-governance-baseline.md
+  - id: MS-002
+    type: Milestone
+    path: 09_milestones/MS-002-saas-access-and-customer-onboarding.md
   - id: GOAL-IPS-GOVERNANCE
     type: Goal
     path: 22_goal_impact/GOAL-IMPACT-TASK-001.md
@@ -54,6 +63,21 @@ nodes:
     type: ValidationReport
     path: 12_validation/VAL-TASK-002-saas-access-and-customer-onboarding.md
 edges:
+  - from: VISION-001
+    type: decomposes_into
+    to: ROADMAP-001
+  - from: ROADMAP-001
+    type: decomposes_into
+    to: MS-001
+  - from: ROADMAP-001
+    type: decomposes_into
+    to: MS-002
+  - from: MS-001
+    type: decomposes_into
+    to: FEAT-001
+  - from: MS-002
+    type: decomposes_into
+    to: FEAT-002
   - from: VISION-001
     type: decomposes_into
     to: SYS-001

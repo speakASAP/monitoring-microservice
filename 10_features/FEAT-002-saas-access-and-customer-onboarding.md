@@ -1,6 +1,7 @@
 # FEAT-002: SaaS Access and Customer Onboarding
 
 Parent subsystem: `05_subsystems/SUB-002-monitoring-dashboard.md`
+Upstream milestone: `09_milestones/MS-002-saas-access-and-customer-onboarding.md`
 
 ## Goal
 

@@ -11,6 +11,7 @@ upstream:
   - ../01_vision/VISION.md
 downstream:
   - ../09_milestones/MS-001-ips-governance-baseline.md
+  - ../09_milestones/MS-002-saas-access-and-customer-onboarding.md
 related_adrs:
   - ../07_decisions/ADR-001-use-ips-governance-baseline.md
 ```
@@ -18,12 +19,14 @@ related_adrs:
 ## Sequencing Strategy
 
 1. Establish IPS governance baseline.
-2. Use IPS tasks for future registry, API, dashboard, alerting, and Kubernetes changes.
-3. Keep validation evidence under `12_validation/` and operational gate reports under `reports/validation/`.
+2. Establish SaaS access, customer onboarding, and admin-only operational monitoring boundaries.
+3. Use IPS tasks for future registry, API, dashboard, alerting, and Kubernetes changes.
+4. Keep validation evidence under `12_validation/` and operational gate reports under `reports/validation/`.
 
 ## Current Milestones
 
 - `MS-001`: IPS governance baseline.
+- `MS-002`: SaaS access and customer onboarding.
 
 ## Validation
 
