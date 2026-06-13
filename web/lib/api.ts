@@ -14,4 +14,6 @@ export const api = {
     axios.get(`${getApiBaseUrl()}/api/alerts`, { params: { status } }).then(r => r.data),
   acknowledgeAlert: (id: string, acknowledgedBy: string) =>
     axios.post(`${getApiBaseUrl()}/api/alerts/${id}/acknowledge`, { acknowledgedBy }).then(r => r.data),
+  getMarathonEvents: (windowMinutes = 60, limit = 25) =>
+    axios.get(`${getApiBaseUrl()}/api/marathon-monitoring/events`, { params: { windowMinutes, limit } }).then(r => r.data),
 };

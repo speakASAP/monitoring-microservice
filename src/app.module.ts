@@ -9,6 +9,7 @@ import { AlertsModule } from './alerts/alerts.module';
 import { ServicesModule } from './services/services.module';
 import { WebhooksModule } from './webhooks/webhooks.module';
 import { DigestModule } from './digest/digest.module';
+import { MarathonMonitoringModule } from './marathon-monitoring/marathon-monitoring.module';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { DigestModule } from './digest/digest.module';
     ServicesModule,
     WebhooksModule,
     DigestModule,
+    MarathonMonitoringModule,
   ],
   controllers: [HealthController],
 })

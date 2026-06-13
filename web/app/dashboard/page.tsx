@@ -1,13 +1,15 @@
 'use client';
 import { useState } from 'react';
-import { useServices, useAlerts } from '../../hooks/useMonitoring';
+import { useServices, useAlerts, useMarathonEvents } from '../../hooks/useMonitoring';
 import { ServiceStatusGrid } from '../../components/dashboard/ServiceStatusGrid';
 import { AlertsPanel } from '../../components/dashboard/AlertsPanel';
+import { MarathonEventsPanel } from '../../components/dashboard/MarathonEventsPanel';
 
 export default function DashboardPage() {
-  const [activeTab, setActiveTab] = useState<'overview' | 'alerts' | 'services'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'alerts' | 'services' | 'marathon'>('overview');
   const { services } = useServices();
   const { alerts } = useAlerts();
+  const marathonEvents = useMarathonEvents();
 
   const s = {
     total: services.length,
@@ -16,7 +18,7 @@ export default function DashboardPage() {
     activeAlerts: alerts.filter((x: any) => x.status === 'active').length,
   };
 
-  const tabs = ['overview', 'alerts', 'services'] as const;
+  const tabs = ['overview', 'alerts', 'services', 'marathon'] as const;
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh' }}>
@@ -79,6 +81,13 @@ export default function DashboardPage() {
           <div>
             <h2 style={{ marginBottom: '1.5rem', color: '#e2e8f0' }}>All Services</h2>
             <ServiceStatusGrid services={services} />
+          </div>
+        )}
+
+        {activeTab === 'marathon' && (
+          <div>
+            <h2 style={{ marginBottom: '1.5rem', color: '#e2e8f0' }}>Marathon Registration / Checkout</h2>
+            <MarathonEventsPanel summary={marathonEvents.summary} loading={marathonEvents.loading} error={marathonEvents.error} />
           </div>
         )}
       </main>
