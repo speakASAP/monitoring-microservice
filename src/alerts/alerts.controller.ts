@@ -1,9 +1,11 @@
-import { Controller, Get, Post, Param, Body, Query } from '@nestjs/common';
+import { Controller, Get, Post, Param, Body, Query, UseGuards } from '@nestjs/common';
+import { MonitoringAdminGuard } from '../auth/monitoring-admin.guard';
 import { AlertsService } from './alerts.service';
 import { CreateAlertDto } from './dto/create-alert.dto';
 import { AcknowledgeAlertDto } from './dto/acknowledge-alert.dto';
 
 @Controller('api/alerts')
+@UseGuards(MonitoringAdminGuard)
 export class AlertsController {
   constructor(private readonly svc: AlertsService) {}
 

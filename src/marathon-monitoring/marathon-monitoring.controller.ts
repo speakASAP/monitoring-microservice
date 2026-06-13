@@ -1,7 +1,9 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import { MonitoringAdminGuard } from '../auth/monitoring-admin.guard';
 import { MarathonMonitoringService } from './marathon-monitoring.service';
 
 @Controller('api/marathon-monitoring')
+@UseGuards(MonitoringAdminGuard)
 export class MarathonMonitoringController {
   constructor(private readonly service: MarathonMonitoringService) {}
 

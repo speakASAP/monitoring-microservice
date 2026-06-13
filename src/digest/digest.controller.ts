@@ -1,7 +1,9 @@
-import { Controller, Post } from '@nestjs/common';
+import { Controller, Post, UseGuards } from '@nestjs/common';
+import { MonitoringAdminGuard } from '../auth/monitoring-admin.guard';
 import { DailyDigestService } from './daily-digest.service';
 
 @Controller('api/digest')
+@UseGuards(MonitoringAdminGuard)
 export class DigestController {
   constructor(private readonly digest: DailyDigestService) {}
 

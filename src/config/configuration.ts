@@ -9,6 +9,12 @@ export default () => ({
     database: process.env.DB_NAME || 'monitoring',
   },
   auth: { url: process.env.AUTH_SERVICE_URL || 'http://auth-microservice:3370' },
+  monitoring: {
+    publicUrl: process.env.MONITORING_PUBLIC_URL || 'https://monitoring.alfares.cz',
+    adminRoles:
+      process.env.MONITORING_ADMIN_ROLES ||
+      'global:superadmin,global:platform_admin,monitoring:admin,app:monitoring:admin',
+  },
   logging: { url: process.env.LOGGING_SERVICE_URL || 'http://logging-microservice:3367' },
   notifications: { url: process.env.NOTIFICATION_SERVICE_URL || 'http://notifications-microservice:3368' },
   prometheus: { url: process.env.PROMETHEUS_URL || 'http://prometheus:9090' },

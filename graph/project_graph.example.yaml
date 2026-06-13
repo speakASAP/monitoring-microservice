@@ -32,6 +32,27 @@ nodes:
   - id: VAL-TASK-001-ips-governance-baseline
     type: ValidationReport
     path: 12_validation/VAL-TASK-001-ips-governance-baseline.md
+  - id: GOAL-SaaS-ACCESS
+    type: Goal
+    path: 22_goal_impact/GOAL-IMPACT-TASK-002.md
+  - id: FEAT-002
+    type: Feature
+    path: 10_features/FEAT-002-saas-access-and-customer-onboarding.md
+  - id: TASK-002
+    type: Task
+    path: 11_tasks/TASK-002-implement-saas-access-and-customer-onboarding.md
+  - id: EP-TASK-002
+    type: ExecutionPlan
+    path: 21_execution_plans/EP-TASK-002-saas-access-and-customer-onboarding.md
+  - id: CP-TASK-002-saas-access-and-customer-onboarding
+    type: ContextPackage
+    path: 13_context_packages/CP-TASK-002-saas-access-and-customer-onboarding.md
+  - id: PROMPT-TASK-002-saas-access-and-customer-onboarding
+    type: CodingPrompt
+    path: 14_prompts/PROMPT-TASK-002-saas-access-and-customer-onboarding.md
+  - id: VAL-TASK-002-saas-access-and-customer-onboarding
+    type: ValidationReport
+    path: 12_validation/VAL-TASK-002-saas-access-and-customer-onboarding.md
 edges:
   - from: VISION-001
     type: decomposes_into
@@ -69,3 +90,36 @@ edges:
   - from: VAL-TASK-001-ips-governance-baseline
     type: validates
     to: TASK-001
+  - from: SYS-001
+    type: decomposes_into
+    to: FEAT-002
+  - from: TASK-002
+    type: implements
+    to: FEAT-002
+  - from: TASK-002
+    type: impacts_goal
+    to: GOAL-SaaS-ACCESS
+  - from: TASK-002
+    type: decomposes_into
+    to: EP-TASK-002
+  - from: EP-TASK-002
+    type: derives_from
+    to: TASK-002
+  - from: EP-TASK-002
+    type: generates
+    to: PROMPT-TASK-002-saas-access-and-customer-onboarding
+  - from: EP-TASK-002
+    type: constrained_by
+    to: ADR-001
+  - from: EP-TASK-002
+    type: constrained_by
+    to: ARCH-001
+  - from: PROMPT-TASK-002-saas-access-and-customer-onboarding
+    type: derives_from
+    to: EP-TASK-002
+  - from: PROMPT-TASK-002-saas-access-and-customer-onboarding
+    type: included_in_context
+    to: CP-TASK-002-saas-access-and-customer-onboarding
+  - from: VAL-TASK-002-saas-access-and-customer-onboarding
+    type: validates
+    to: TASK-002

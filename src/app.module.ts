@@ -10,10 +10,14 @@ import { ServicesModule } from './services/services.module';
 import { WebhooksModule } from './webhooks/webhooks.module';
 import { DigestModule } from './digest/digest.module';
 import { MarathonMonitoringModule } from './marathon-monitoring/marathon-monitoring.module';
+import { AuthConsumerModule } from './auth/auth-consumer.module';
+import { SessionController } from './auth/session.controller';
+import { CustomerIntegrationsModule } from './customer-integrations/customer-integrations.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true, load: [configuration] }),
+    AuthConsumerModule,
     ScheduleModule.forRoot(),
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],
@@ -34,7 +38,8 @@ import { MarathonMonitoringModule } from './marathon-monitoring/marathon-monitor
     WebhooksModule,
     DigestModule,
     MarathonMonitoringModule,
+    CustomerIntegrationsModule,
   ],
-  controllers: [HealthController],
+  controllers: [HealthController, SessionController],
 })
 export class AppModule {}

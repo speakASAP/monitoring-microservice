@@ -1,15 +1,18 @@
 'use client';
 import { useState } from 'react';
+import { AuthGate } from '../../components/auth/AuthGate';
 import { useServices, useAlerts, useMarathonEvents } from '../../hooks/useMonitoring';
 import { ServiceStatusGrid } from '../../components/dashboard/ServiceStatusGrid';
 import { AlertsPanel } from '../../components/dashboard/AlertsPanel';
 import { MarathonEventsPanel } from '../../components/dashboard/MarathonEventsPanel';
+import { getAuthToken, clearAuthTokens } from '../../lib/auth';
 
-export default function DashboardPage() {
+function AdminDashboard() {
   const [activeTab, setActiveTab] = useState<'overview' | 'alerts' | 'services' | 'marathon'>('overview');
-  const { services } = useServices();
-  const { alerts } = useAlerts();
-  const marathonEvents = useMarathonEvents();
+  const token = getAuthToken();
+  const { services } = useServices(token);
+  const { alerts } = useAlerts(token);
+  const marathonEvents = useMarathonEvents(token);
 
   const s = {
     total: services.length,
@@ -40,6 +43,9 @@ export default function DashboardPage() {
           <a href="https://grafana.alfares.cz" target="_blank" rel="noreferrer" style={{ color: '#94a3b8', fontSize: '0.8rem', display: 'block', padding: '0.5rem 0.75rem' }}>
             Grafana →
           </a>
+          <button onClick={() => { clearAuthTokens(); window.location.assign('/'); }} style={{ color: '#64748b', fontSize: '0.8rem', display: 'block', padding: '0.5rem 0.75rem', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left' }}>
+            Sign out
+          </button>
         </div>
       </nav>
 
@@ -92,5 +98,13 @@ export default function DashboardPage() {
         )}
       </main>
     </div>
+  );
+}
+
+export default function DashboardPage() {
+  return (
+    <AuthGate requireAdmin>
+      {() => <AdminDashboard />}
+    </AuthGate>
   );
 }
