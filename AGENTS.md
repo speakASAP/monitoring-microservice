@@ -1,5 +1,26 @@
 # AGENTS.md — monitoring-microservice
 
+## Intent Preservation System
+
+This repository follows the company standard in the numbered IPS directories.
+
+Before code changes, read:
+
+- `00_constitution/CONSTITUTION.md`
+- `01_vision/VISION.md`
+- `17_governance/PROJECT_INVARIANTS.md`
+- relevant `11_tasks/`, `21_execution_plans/`, `22_goal_impact/`, and `12_validation/` artifacts
+
+Required gates for governance or deployment-impacting work:
+
+```bash
+python3 scripts/strict_doc_audit.py --format markdown --fail-on-issues
+python3 scripts/pre_coding_gate.py --root .
+python3 scripts/deployment_readiness_gate.py --root .
+```
+
+Do not put secrets, raw production data, confidential identifiers, or real customer data in prompts, examples, logs, plans, tests, screenshots, or reports.
+
 ## Knowledge Retrieval (query before reading files)
 Query the RAG service first — saves 2000-5000 tokens per query:
 - URL: `http://docs-rag-microservice.statex-apps.svc.cluster.local:3397`

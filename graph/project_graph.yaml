@@ -1,0 +1,71 @@
+nodes:
+  - id: VISION-001
+    type: Vision
+    path: 01_vision/VISION.md
+  - id: GOAL-IPS-GOVERNANCE
+    type: Goal
+    path: 22_goal_impact/GOAL-IMPACT-TASK-001.md
+  - id: ARCH-001
+    type: ArchitectureDocument
+    path: 06_architecture/ARCHITECTURE_OVERVIEW.md
+  - id: ADR-001
+    type: ADR
+    path: 07_decisions/ADR-001-use-ips-governance-baseline.md
+  - id: SYS-001
+    type: System
+    path: 04_systems/SYS-001-monitoring-platform.md
+  - id: FEAT-001
+    type: Feature
+    path: 10_features/FEAT-001-ips-governance-baseline.md
+  - id: TASK-001
+    type: Task
+    path: 11_tasks/TASK-001-implement-ips-governance-baseline.md
+  - id: EP-TASK-001
+    type: ExecutionPlan
+    path: 21_execution_plans/EP-TASK-001-implement-ips-governance-baseline.md
+  - id: CP-TASK-001-ips-governance-baseline
+    type: ContextPackage
+    path: 13_context_packages/CP-TASK-001-ips-governance-baseline.md
+  - id: PROMPT-TASK-001-ips-governance-baseline
+    type: CodingPrompt
+    path: 14_prompts/PROMPT-TASK-001-ips-governance-baseline.md
+  - id: VAL-TASK-001-ips-governance-baseline
+    type: ValidationReport
+    path: 12_validation/VAL-TASK-001-ips-governance-baseline.md
+edges:
+  - from: VISION-001
+    type: decomposes_into
+    to: SYS-001
+  - from: SYS-001
+    type: decomposes_into
+    to: FEAT-001
+  - from: TASK-001
+    type: implements
+    to: FEAT-001
+  - from: TASK-001
+    type: impacts_goal
+    to: GOAL-IPS-GOVERNANCE
+  - from: TASK-001
+    type: decomposes_into
+    to: EP-TASK-001
+  - from: EP-TASK-001
+    type: derives_from
+    to: TASK-001
+  - from: EP-TASK-001
+    type: generates
+    to: PROMPT-TASK-001-ips-governance-baseline
+  - from: EP-TASK-001
+    type: constrained_by
+    to: ADR-001
+  - from: EP-TASK-001
+    type: constrained_by
+    to: ARCH-001
+  - from: PROMPT-TASK-001-ips-governance-baseline
+    type: derives_from
+    to: EP-TASK-001
+  - from: PROMPT-TASK-001-ips-governance-baseline
+    type: included_in_context
+    to: CP-TASK-001-ips-governance-baseline
+  - from: VAL-TASK-001-ips-governance-baseline
+    type: validates
+    to: TASK-001

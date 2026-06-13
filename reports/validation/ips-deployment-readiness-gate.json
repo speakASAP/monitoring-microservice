@@ -1,0 +1,31 @@
+{
+  "created_at": "2026-06-13T18:16:51Z",
+  "gate": "deployment_readiness",
+  "next_step": "ready_for_deployment_review",
+  "pre_coding_gate": {
+    "report_path": "reports/validation/ips-pre-coding-gate.json",
+    "status": "pass"
+  },
+  "protected_files": {
+    "changed_files": [],
+    "status": "pass",
+    "stderr": ""
+  },
+  "root": "/home/ssf/Documents/Github/monitoring-microservice",
+  "schema_version": "1.0.0",
+  "status": "pass",
+  "strict_doc_audit": {
+    "findings_count": 0,
+    "score": 100,
+    "status": "PASS"
+  },
+  "target": null,
+  "unresolved_markers": [],
+  "validation_reports": {
+    "reports": [
+      "12_validation/VAL-TASK-001-ips-governance-baseline.md"
+    ],
+    "status": "pass",
+    "target": null
+  }
+}
