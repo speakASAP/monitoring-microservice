@@ -44,7 +44,7 @@ export function MarathonEventsPanel({ summary, loading, error }: { summary: Mara
 
       <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
         <Stat label={`Events / ${summary?.windowMinutes || 60}m`} value={totals.events} color="#3b82f6" />
-        <Stat label="Checkout/registration errors" value={totals.errors} color="#ef4444" />
+        <Stat label="Unlock-flow errors" value={totals.errors} color="#ef4444" />
         <Stat label="Warnings" value={totals.warnings} color="#f59e0b" />
       </div>
 
@@ -52,7 +52,7 @@ export function MarathonEventsPanel({ summary, loading, error }: { summary: Mara
         <h3 style={{ color: '#94a3b8', marginBottom: '0.75rem' }}>Event Codes</h3>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '0.75rem' }}>
           {codes.length === 0 ? (
-            <div style={{ color: '#64748b', padding: '1rem' }}>No Marathon registration or checkout events in this window.</div>
+            <div style={{ color: '#64748b', padding: '1rem' }}>No Marathon unlock-flow events in this window.</div>
           ) : codes.map((row) => (
             <div key={`${row.eventCode}-${row.level}`} style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: '10px', padding: '1rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', gap: '0.75rem' }}>
