@@ -1,8 +1,9 @@
-import { IsIn, IsOptional, IsString, IsUrl, MaxLength } from 'class-validator';
+import { IsIn, IsNotEmpty, IsOptional, IsString, IsUrl, MaxLength } from 'class-validator';
 
 export class UpdateCustomerIntegrationDto {
   @IsOptional()
   @IsString()
+  @IsNotEmpty()
   @MaxLength(120)
   name?: string;
 
@@ -17,6 +18,7 @@ export class UpdateCustomerIntegrationDto {
 
   @IsOptional()
   @IsUrl({ require_tld: false })
+  @IsNotEmpty()
   @MaxLength(500)
   baseUrl?: string;
 

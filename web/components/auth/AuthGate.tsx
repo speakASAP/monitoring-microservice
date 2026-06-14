@@ -1,5 +1,6 @@
 'use client';
 
+import type React from 'react';
 import { useEffect, useState } from 'react';
 import { api } from '../../lib/api';
 import { authUrl, clearAuthTokens, getAuthToken, type AuthSession } from '../../lib/auth';
@@ -8,6 +9,18 @@ type AuthGateProps = {
   children: (session: AuthSession) => React.ReactNode;
   requireAdmin?: boolean;
 };
+
+function normalizeSession(data: any): AuthSession {
+  const user = data?.user || {};
+  return {
+    user: {
+      id: String(user.id || ''),
+      email: user.email,
+      roles: Array.isArray(user.roles) ? user.roles : [],
+    },
+    isAdmin: Boolean(data?.isAdmin),
+  };
+}
 
 export function AuthGate({ children, requireAdmin = false }: AuthGateProps) {
   const [session, setSession] = useState<AuthSession | null>(null);
@@ -24,17 +37,14 @@ export function AuthGate({ children, requireAdmin = false }: AuthGateProps) {
     api.getSession(token)
       .then((data) => {
         if (!active) return;
-        if (requireAdmin && !data.isAdmin) {
-          setStatus('forbidden');
-          setSession(data);
-          return;
-        }
-        setSession(data);
-        setStatus('ready');
+        const nextSession = normalizeSession(data);
+        setSession(nextSession);
+        setStatus(requireAdmin && !nextSession.isAdmin ? 'forbidden' : 'ready');
       })
       .catch(() => {
         if (!active) return;
         clearAuthTokens();
+        setSession(null);
         setStatus('missing');
       });
 
@@ -62,7 +72,7 @@ export function AuthGate({ children, requireAdmin = false }: AuthGateProps) {
         <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
           <a href={loginHref} style={{ background: '#3b82f6', color: 'white', padding: '0.75rem 1rem', borderRadius: '8px', fontWeight: 700 }}>Log in</a>
           {!requireAdmin && <a href={registerHref} style={{ background: '#334155', color: '#e2e8f0', padding: '0.75rem 1rem', borderRadius: '8px', fontWeight: 700 }}>Register</a>}
-          {status === 'forbidden' && <a href="/customer" style={{ color: '#93c5fd', padding: '0.75rem 0' }}>Open customer dashboard</a>}
+          {status === 'forbidden' && <a href='/customer' style={{ color: '#93c5fd', padding: '0.75rem 0' }}>Open customer dashboard</a>}
         </div>
       </div>
     </div>

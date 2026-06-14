@@ -1,7 +1,8 @@
-import { IsIn, IsOptional, IsString, IsUrl, MaxLength } from 'class-validator';
+import { IsIn, IsNotEmpty, IsOptional, IsString, IsUrl, MaxLength } from 'class-validator';
 
 export class CreateCustomerIntegrationDto {
   @IsString()
+  @IsNotEmpty()
   @MaxLength(120)
   name: string;
 
@@ -15,6 +16,7 @@ export class CreateCustomerIntegrationDto {
   endpointType?: string;
 
   @IsUrl({ require_tld: false })
+  @IsNotEmpty()
   @MaxLength(500)
   baseUrl: string;
 

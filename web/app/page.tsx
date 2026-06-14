@@ -1,4 +1,7 @@
+'use client';
+
 import Link from 'next/link';
+import { authUrl } from '../lib/auth';
 
 const pricing = [
   { name: 'Launch', price: '2 900 CZK', services: 'Up to 5 services', detail: 'Health checks, hosted dashboard, email alert routing' },
@@ -7,8 +10,8 @@ const pricing = [
 ];
 
 export default function LandingPage() {
-  const registerHref = 'https://auth.alfares.cz/register?return_url=https%3A%2F%2Fmonitoring.alfares.cz%2Fauth%2Fcallback%3Fnext%3D%2Fcustomer&client_id=monitoring-web';
-  const loginHref = 'https://auth.alfares.cz/login?return_url=https%3A%2F%2Fmonitoring.alfares.cz%2Fauth%2Fcallback%3Fnext%3D%2Fcustomer&client_id=monitoring-web';
+  const registerHref = authUrl('register', '/auth/callback?next=/customer');
+  const loginHref = authUrl('login', '/auth/callback?next=/customer');
 
   return (
     <main style={{ minHeight: '100vh', background: '#0f172a', color: '#e2e8f0' }}>

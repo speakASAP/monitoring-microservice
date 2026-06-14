@@ -13,7 +13,7 @@ export default () => ({
     publicUrl: process.env.MONITORING_PUBLIC_URL || 'https://monitoring.alfares.cz',
     adminRoles:
       process.env.MONITORING_ADMIN_ROLES ||
-      'global:superadmin,global:platform_admin,monitoring:admin,app:monitoring:admin',
+      'global:superadmin,global:platform_admin,app:monitoring-microservice:admin,internal:monitoring-microservice:admin,monitoring:admin,app:monitoring:admin',
   },
   logging: { url: process.env.LOGGING_SERVICE_URL || 'http://logging-microservice:3367' },
   notifications: { url: process.env.NOTIFICATION_SERVICE_URL || 'http://notifications-microservice:3368' },

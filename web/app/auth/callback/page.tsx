@@ -3,14 +3,31 @@
 import { useEffect, useState } from 'react';
 import { saveAuthTokens } from '../../../lib/auth';
 
+function firstParam(sources: URLSearchParams[], names: string[]) {
+  for (const params of sources) {
+    for (const name of names) {
+      const value = params.get(name);
+      if (value) return value;
+    }
+  }
+  return '';
+}
+
+function safeNextPath(value: string | null) {
+  if (!value || !value.startsWith('/') || value.startsWith('//')) return '/customer';
+  return value;
+}
+
 export default function AuthCallbackPage() {
   const [message, setMessage] = useState('Completing sign in...');
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.hash.replace(/^#/, ''));
-    const accessToken = params.get('access_token');
-    const refreshToken = params.get('refresh_token') || undefined;
-    const next = new URLSearchParams(window.location.search).get('next') || '/customer';
+    const searchParams = new URLSearchParams(window.location.search);
+    const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+    const sources = [searchParams, hashParams];
+    const accessToken = firstParam(sources, ['access_token', 'accessToken', 'token']);
+    const refreshToken = firstParam(sources, ['refresh_token', 'refreshToken']) || undefined;
+    const next = safeNextPath(firstParam(sources, ['next']) || '/customer');
 
     if (!accessToken) {
       setMessage('No access token was returned. Please sign in again.');

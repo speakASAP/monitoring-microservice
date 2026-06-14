@@ -88,3 +88,7 @@ Deployed alongside the microservice in `statex-apps` namespace:
 ### Ecosystem service registry
 
 `ECOSYSTEM_SERVICES` in `src/services/services.service.ts` is the single source of truth for which services are monitored. Internal URLs follow the pattern `http://<name>.statex-apps.svc.cluster.local:<port>`.
+
+## Central Instruction Source
+
+Shared agent rules now live in `/home/ssf/.claude/CLAUDE.md`, `/home/ssf/Documents/Github/CLAUDE.md`, `/home/ssf/.codex/AGENTS.md`, and `/home/ssf/.ai-agent-standards/CROSS_AGENT_AUTOMATION_STANDARD.md`. Keep this file for repository-specific Claude constraints only; do not duplicate shared operating rules here.

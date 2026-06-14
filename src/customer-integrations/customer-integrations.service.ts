@@ -39,8 +39,9 @@ export class CustomerIntegrationsService implements OnModuleInit {
     await this.repo.query('CREATE INDEX IF NOT EXISTS idx_customer_integrations_owner ON monitoring.customer_integrations ("ownerUserId");');
   }
 
-  list(user: MonitoringAuthUser) {
-    return this.repo.find({ where: { ownerUserId: user.id }, order: { updatedAt: 'DESC' } });
+  async list(user: MonitoringAuthUser) {
+    const integrations = await this.repo.find({ where: { ownerUserId: user.id }, order: { updatedAt: 'DESC' } });
+    return integrations.map((integration) => this.withConnectionDetails(integration));
   }
 
   async create(user: MonitoringAuthUser, dto: CreateCustomerIntegrationDto) {
@@ -65,11 +66,22 @@ export class CustomerIntegrationsService implements OnModuleInit {
 
   async update(user: MonitoringAuthUser, id: string, dto: UpdateCustomerIntegrationDto) {
     const integration = await this.findOwned(user, id);
-    Object.assign(integration, {
-      ...dto,
-      healthPath: dto.healthPath || integration.healthPath,
-      webhookPath: dto.webhookPath || integration.webhookPath,
-    });
+    const allowedFields: Array<keyof UpdateCustomerIntegrationDto> = [
+      'name',
+      'serviceType',
+      'endpointType',
+      'baseUrl',
+      'healthPath',
+      'webhookPath',
+      'notes',
+    ];
+
+    for (const field of allowedFields) {
+      if (dto[field] !== undefined) {
+        integration[field] = dto[field];
+      }
+    }
+
     return this.withConnectionDetails(await this.repo.save(integration));
   }
 
@@ -97,12 +109,31 @@ export class CustomerIntegrationsService implements OnModuleInit {
 
   private withConnectionDetails(integration: CustomerIntegration, apiKey?: string) {
     const publicUrl = (this.config.get<string>('monitoring.publicUrl') || 'https://monitoring.alfares.cz').replace(/\/$/, '');
-    return {
-      ...integration,
+    const response = {
+      id: integration.id,
+      ownerUserId: integration.ownerUserId,
+      ownerEmail: integration.ownerEmail,
+      name: integration.name,
+      serviceType: integration.serviceType,
+      endpointType: integration.endpointType,
+      baseUrl: integration.baseUrl,
+      healthPath: integration.healthPath,
+      webhookPath: integration.webhookPath,
+      status: integration.status,
+      apiKeyId: integration.apiKeyId,
+      apiKeyPreview: integration.apiKeyPreview,
+      notes: integration.notes,
+      createdAt: integration.createdAt,
+      updatedAt: integration.updatedAt,
       ingestEndpoint: `${publicUrl}/api/ingest/${integration.apiKeyId || 'key-id'}`,
       webhookEndpoint: `${publicUrl}/api/customer/webhooks/${integration.apiKeyId || 'key-id'}`,
-      apiKey,
     };
+
+    if (apiKey) {
+      return { ...response, apiKey };
+    }
+
+    return response;
   }
 
   private generateApiKey() {

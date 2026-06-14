@@ -3,11 +3,11 @@ import { MonitoringAdminGuard } from '../auth/monitoring-admin.guard';
 import { ServicesService } from './services.service';
 
 @Controller('api/services')
+@UseGuards(MonitoringAdminGuard)
 export class ServicesController {
   constructor(private readonly svc: ServicesService) {}
 
   @Get()
-  @UseGuards(MonitoringAdminGuard)
   getAll() { return this.svc.getServicesStatus(); }
 
   @Get('list')
