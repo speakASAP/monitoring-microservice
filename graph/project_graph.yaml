@@ -86,6 +86,27 @@ nodes:
   - id: VAL-TASK-003-customer-integration-ingest-and-webhook-activation
     type: ValidationReport
     path: 12_validation/VAL-TASK-003-customer-integration-ingest-and-webhook-activation.md
+  - id: MS-004
+    type: Milestone
+    path: 09_milestones/MS-004-task003-production-deployment-and-smoke-validation.md
+  - id: GOAL-IMPACT-TASK-004
+    type: Goal
+    path: 22_goal_impact/GOAL-IMPACT-TASK-004.md
+  - id: FEAT-004
+    type: Feature
+    path: 10_features/FEAT-004-task003-production-deployment-and-smoke-validation.md
+  - id: TASK-004
+    type: Task
+    path: 11_tasks/TASK-004-task003-production-deployment-and-smoke-validation.md
+  - id: EP-TASK-004
+    type: ExecutionPlan
+    path: 21_execution_plans/EP-TASK-004-task003-production-deployment-and-smoke-validation.md
+  - id: CP-TASK-004-task003-production-deployment-and-smoke-validation
+    type: ContextPackage
+    path: 13_context_packages/CP-TASK-004-task003-production-deployment-and-smoke-validation.md
+  - id: PROMPT-TASK-004-task003-production-deployment-and-smoke-validation
+    type: CodingPrompt
+    path: 14_prompts/PROMPT-TASK-004-task003-production-deployment-and-smoke-validation.md
 edges:
   - from: VISION-001
     type: decomposes_into
@@ -210,3 +231,39 @@ edges:
   - from: VAL-TASK-003-customer-integration-ingest-and-webhook-activation
     type: validates
     to: TASK-003
+  - from: ROADMAP-001
+    type: decomposes_into
+    to: MS-004
+  - from: MS-004
+    type: decomposes_into
+    to: FEAT-004
+  - from: SYS-001
+    type: decomposes_into
+    to: FEAT-004
+  - from: TASK-004
+    type: implements
+    to: FEAT-004
+  - from: TASK-004
+    type: impacts_goal
+    to: GOAL-IMPACT-TASK-004
+  - from: TASK-004
+    type: decomposes_into
+    to: EP-TASK-004
+  - from: EP-TASK-004
+    type: derives_from
+    to: TASK-004
+  - from: EP-TASK-004
+    type: generates
+    to: PROMPT-TASK-004-task003-production-deployment-and-smoke-validation
+  - from: EP-TASK-004
+    type: constrained_by
+    to: ADR-001
+  - from: EP-TASK-004
+    type: constrained_by
+    to: ARCH-001
+  - from: PROMPT-TASK-004-task003-production-deployment-and-smoke-validation
+    type: derives_from
+    to: EP-TASK-004
+  - from: PROMPT-TASK-004-task003-production-deployment-and-smoke-validation
+    type: included_in_context
+    to: CP-TASK-004-task003-production-deployment-and-smoke-validation
