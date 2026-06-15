@@ -2,7 +2,7 @@
 
 ```yaml
 id: TASK-004
-status: reviewed
+status: validated
 owner: Operations Lead
 created: 2026-06-15
 last_updated: 2026-06-15
@@ -75,14 +75,14 @@ Smoke checks should use client-supplied synthetic event ids so repeated executio
 
 ## Acceptance Criteria
 
-- [ ] Remote repository is clean before deployment.
-- [ ] Deployment script completes successfully after owner approval.
-- [ ] API and web rollout status is checked.
-- [ ] Valid synthetic ingest or webhook submission is accepted.
-- [ ] Invalid key submission is rejected generically.
-- [ ] Owner-scoped event listing is verified or blocked with `missing approved smoke Auth token`.
-- [ ] Anonymous operational API access remains protected.
-- [ ] Strict documentation audit, pre-coding gate, and deployment-readiness gate pass before closure.
+- [x] Remote repository is clean before deployment through the clean execution worktree; unrelated dirty files remained untouched in the original worktree.
+- [x] Deployment script completes successfully after owner approval; immutable rollout correction was applied and the script was patched for future deploys.
+- [x] API and web rollout status is checked for immutable tag `99a4f0c`.
+- [x] Valid synthetic ingest and webhook submissions are accepted with 202 responses.
+- [x] Invalid key submission is rejected generically with 401.
+- [x] Owner-scoped event listing is verified with a synthetic Auth smoke token stored in Vault and synced through Kubernetes Secret key names.
+- [x] Anonymous operational API access remains protected for guarded admin and customer routes.
+- [x] Strict documentation audit, pre-coding gate, and deployment-readiness gate pass before closure.
 
 ## Required Context
 
