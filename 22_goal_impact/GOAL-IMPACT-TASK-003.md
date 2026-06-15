@@ -18,7 +18,7 @@ upstream_links:
 downstream_links:
   - 21_execution_plans/EP-TASK-003-customer-integration-ingest-and-webhook-activation.md
 validation_method: Build, unit tests, source review, strict documentation audit, IPS gates, and sanitized endpoint smoke checks.
-status: reviewed
+status: validated
 ```
 
 ## Explanation

@@ -2,7 +2,7 @@
 
 ```yaml
 id: PROMPT-TASK-003-customer-integration-ingest-and-webhook-activation
-status: draft
+status: used
 owner: Operations Lead
 created: 2026-06-15
 last_updated: 2026-06-15

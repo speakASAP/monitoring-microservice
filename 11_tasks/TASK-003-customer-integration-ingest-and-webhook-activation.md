@@ -2,11 +2,11 @@
 
 ```yaml
 id: TASK-003
-status: reviewed
+status: completed
 owner: Operations Lead
 created: 2026-06-15
 last_updated: 2026-06-15
-completeness_level: complete
+completeness_level: validated
 upstream:
   - ../10_features/FEAT-003-customer-integration-ingest-and-webhook-activation.md
 goal_impact:
@@ -77,13 +77,13 @@ Event persistence and key verification must be deterministic in unit tests. Acce
 
 ## Acceptance Criteria
 
-- [ ] Valid integration keys can submit synthetic health ingest events and receive a sanitized success response.
-- [ ] Invalid, unknown, missing, or inactive keys are rejected with a generic unauthorized response.
-- [ ] Raw API keys and Authorization headers are not persisted, logged, or included in validation evidence.
-- [ ] Accepted events are associated with the correct customer integration and owner.
-- [ ] Authenticated customers can list only their own recent integration events.
-- [ ] Customer dashboard displays recent event state without exposing raw secrets.
-- [ ] API build, web build, unit tests, strict doc audit, pre-coding gate, and deployment-readiness gate pass before closure.
+- [x] Valid integration keys can submit synthetic health ingest events and receive a sanitized success response.
+- [x] Invalid, unknown, missing, or inactive keys are rejected with a generic unauthorized response.
+- [x] Raw API keys and Authorization headers are not persisted, logged, or included in validation evidence.
+- [x] Accepted events are associated with the correct customer integration and owner.
+- [x] Authenticated customers can list only their own recent integration events.
+- [x] Customer dashboard displays recent event state without exposing raw secrets.
+- [x] API build, web build, unit tests, strict doc audit, pre-coding gate, and deployment-readiness gate pass before closure.
 
 ## Required Context
 

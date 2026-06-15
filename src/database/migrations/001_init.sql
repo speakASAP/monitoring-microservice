@@ -47,3 +47,28 @@ CREATE TABLE IF NOT EXISTS monitoring.customer_integrations (
 
 CREATE INDEX IF NOT EXISTS idx_customer_integrations_owner
   ON monitoring.customer_integrations ("ownerUserId");
+
+CREATE TABLE IF NOT EXISTS monitoring.customer_integration_events (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  "integrationId" UUID NOT NULL,
+  "ownerUserId" VARCHAR NOT NULL,
+  source VARCHAR NOT NULL DEFAULT 'ingest',
+  "eventType" VARCHAR NOT NULL DEFAULT 'event',
+  "eventId" VARCHAR,
+  status VARCHAR NOT NULL DEFAULT 'unknown',
+  severity VARCHAR NOT NULL DEFAULT 'info',
+  message TEXT,
+  "payloadSummary" JSONB,
+  "observedAt" TIMESTAMP,
+  "createdAt" TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_customer_integration_events_integration
+  ON monitoring.customer_integration_events ("integrationId", "createdAt" DESC);
+
+CREATE INDEX IF NOT EXISTS idx_customer_integration_events_owner
+  ON monitoring.customer_integration_events ("ownerUserId", "createdAt" DESC);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_customer_integration_events_event_id
+  ON monitoring.customer_integration_events ("integrationId", "eventId")
+  WHERE "eventId" IS NOT NULL;

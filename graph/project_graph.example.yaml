@@ -83,6 +83,9 @@ nodes:
   - id: PROMPT-TASK-003-customer-integration-ingest-and-webhook-activation
     type: CodingPrompt
     path: 14_prompts/PROMPT-TASK-003-customer-integration-ingest-and-webhook-activation.md
+  - id: VAL-TASK-003-customer-integration-ingest-and-webhook-activation
+    type: ValidationReport
+    path: 12_validation/VAL-TASK-003-customer-integration-ingest-and-webhook-activation.md
 edges:
   - from: VISION-001
     type: decomposes_into
@@ -204,3 +207,6 @@ edges:
   - from: PROMPT-TASK-003-customer-integration-ingest-and-webhook-activation
     type: included_in_context
     to: CP-TASK-003-customer-integration-ingest-and-webhook-activation
+  - from: VAL-TASK-003-customer-integration-ingest-and-webhook-activation
+    type: validates
+    to: TASK-003

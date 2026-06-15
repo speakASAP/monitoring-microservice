@@ -24,6 +24,20 @@ export type CustomerIntegrationPayload = {
   notes?: string;
 };
 
+export type CustomerIntegrationEvent = {
+  id: string;
+  integrationId: string;
+  source: string;
+  eventType: string;
+  eventId?: string | null;
+  status: string;
+  severity: string;
+  message?: string | null;
+  payloadSummary?: Record<string, unknown> | null;
+  observedAt?: string | null;
+  createdAt?: string;
+};
+
 export type CustomerIntegration = {
   id: string;
   name: string;
@@ -62,6 +76,22 @@ function sanitizeCustomerIntegration(value: any): CustomerIntegration {
   };
 }
 
+function sanitizeCustomerIntegrationEvent(value: any): CustomerIntegrationEvent {
+  return {
+    id: String(value.id || ''),
+    integrationId: String(value.integrationId || ''),
+    source: String(value.source || 'event'),
+    eventType: String(value.eventType || 'event'),
+    eventId: value.eventId ?? null,
+    status: String(value.status || 'unknown'),
+    severity: String(value.severity || 'info'),
+    message: value.message ?? null,
+    payloadSummary: value.payloadSummary ?? null,
+    observedAt: value.observedAt ?? null,
+    createdAt: value.createdAt,
+  };
+}
+
 export const api = {
   getSession: (token: string) =>
     axios.get(`${getApiBaseUrl()}/api/auth/session`, { headers: authHeaders(token) }).then(r => r.data),
@@ -75,6 +105,8 @@ export const api = {
     axios.get(`${getApiBaseUrl()}/api/marathon-monitoring/events`, { params: { windowMinutes, limit }, headers: authHeaders(token) }).then(r => r.data),
   getCustomerIntegrations: (token: string): Promise<CustomerIntegration[]> =>
     axios.get(`${getApiBaseUrl()}/api/customer/integrations`, { headers: authHeaders(token) }).then(r => r.data.map(sanitizeCustomerIntegration)),
+  getCustomerIntegrationEvents: (token: string, integrationId: string): Promise<CustomerIntegrationEvent[]> =>
+    axios.get(`${getApiBaseUrl()}/api/customer/integrations/${integrationId}/events`, { headers: authHeaders(token) }).then(r => r.data.map(sanitizeCustomerIntegrationEvent)),
   createCustomerIntegration: (token: string, payload: CustomerIntegrationPayload): Promise<CustomerIntegration> =>
     axios.post(`${getApiBaseUrl()}/api/customer/integrations`, payload, { headers: authHeaders(token) }).then(r => sanitizeCustomerIntegration(r.data)),
   updateCustomerIntegration: (token: string, id: string, payload: CustomerIntegrationPayload): Promise<CustomerIntegration> =>

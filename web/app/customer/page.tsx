@@ -2,7 +2,13 @@
 
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { AuthGate } from '../../components/auth/AuthGate';
-import { api, type CustomerEndpointType, type CustomerIntegration, type CustomerIntegrationPayload } from '../../lib/api';
+import {
+  api,
+  type CustomerEndpointType,
+  type CustomerIntegration,
+  type CustomerIntegrationEvent,
+  type CustomerIntegrationPayload,
+} from '../../lib/api';
 import { clearAuthTokens, getAuthToken, type AuthSession } from '../../lib/auth';
 
 type FormState = {
@@ -34,10 +40,13 @@ const emptyForm: FormState = {
 function CustomerDashboard({ session }: { session: AuthSession }) {
   const [token] = useState(() => getAuthToken());
   const [items, setItems] = useState<CustomerIntegration[]>([]);
+  const [eventsByIntegration, setEventsByIntegration] = useState<Record<string, CustomerIntegrationEvent[]>>({});
   const [revealedKey, setRevealedKey] = useState<RevealedKey | null>(null);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
+  const [eventsError, setEventsError] = useState('');
   const [loading, setLoading] = useState(true);
+  const [eventsLoading, setEventsLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [actionId, setActionId] = useState('');
@@ -48,13 +57,29 @@ function CustomerDashboard({ session }: { session: AuthSession }) {
   const load = async () => {
     if (!token) return;
     setLoading(true);
+    setEventsLoading(true);
     setError('');
+    setEventsError('');
     try {
-      setItems(await api.getCustomerIntegrations(token));
+      const integrations = await api.getCustomerIntegrations(token);
+      setItems(integrations);
+      const eventEntries = await Promise.all(integrations.map(async (item) => {
+        try {
+          return [item.id, await api.getCustomerIntegrationEvents(token, item.id)] as const;
+        } catch {
+          return [item.id, []] as const;
+        }
+      }));
+      setEventsByIntegration(Object.fromEntries(eventEntries));
+      if (integrations.length > 0 && eventEntries.every(([, events]) => events.length === 0)) {
+        setEventsError('');
+      }
     } catch (err: any) {
       setError(readApiError(err, 'Unable to load integrations'));
+      setEventsByIntegration({});
     } finally {
       setLoading(false);
+      setEventsLoading(false);
     }
   };
 
@@ -172,10 +197,10 @@ function CustomerDashboard({ session }: { session: AuthSession }) {
         <section style={styles.intro}>
           <div style={styles.kicker}>Registered customer workspace</div>
           <h1 style={styles.title}>Connect services without exposing operational data.</h1>
-          <p style={styles.lede}>Create owner-scoped integration records, rotate access keys, and keep callback details ready for your service configuration.</p>
+          <p style={styles.lede}>Create owner-scoped integration records, rotate access keys, and review recent accepted events from your connected services.</p>
           <div style={styles.summaryGrid}>
             <Metric label="Integrations" value={String(items.length)} />
-            <Metric label="Owner scope" value="Account" />
+            <Metric label="Recent events" value={String(Object.values(eventsByIntegration).reduce((sum, events) => sum + events.length, 0))} />
             <Metric label="Key storage" value="Hashed" />
           </div>
         </section>
@@ -190,11 +215,7 @@ function CustomerDashboard({ session }: { session: AuthSession }) {
               {editingItem && <button type="button" onClick={resetForm} style={styles.textButton}>Cancel</button>}
             </div>
 
-            {(error || notice) && (
-              <div style={error ? styles.errorBox : styles.noticeBox} role="status">
-                {error || notice}
-              </div>
-            )}
+            {(error || notice) && <div style={error ? styles.errorBox : styles.noticeBox} role="status">{error || notice}</div>}
 
             <div style={styles.fieldGrid}>
               <label style={styles.label}>Service name
@@ -240,12 +261,13 @@ function CustomerDashboard({ session }: { session: AuthSession }) {
             <div style={styles.panelHeadingRow}>
               <div>
                 <h2 style={styles.panelTitle}>Integration records</h2>
-                <p style={styles.panelText}>Records returned from the owner-scoped customer API.</p>
+                <p style={styles.panelText}>Records and recent accepted events returned from owner-scoped customer APIs.</p>
               </div>
-              <button type="button" onClick={load} disabled={loading} style={styles.refreshButton}>{loading ? 'Loading' : 'Refresh'}</button>
+              <button type="button" onClick={load} disabled={loading || eventsLoading} style={styles.refreshButton}>{loading || eventsLoading ? 'Loading' : 'Refresh'}</button>
             </div>
 
             {revealedKey && <OneTimeKeyPanel keyDetails={revealedKey} onCopy={copyKey} onDismiss={() => setRevealedKey(null)} />}
+            {eventsError && <div style={styles.errorBox}>{eventsError}</div>}
 
             {loading && <StatePanel title="Loading integrations" text="Checking your registered customer workspace." />}
             {!loading && items.length === 0 && <StatePanel title="No integrations yet" text="Add your first synthetic service record to receive callback URLs and a one-time key." />}
@@ -255,6 +277,8 @@ function CustomerDashboard({ session }: { session: AuthSession }) {
                   <IntegrationCard
                     key={item.id}
                     item={item}
+                    events={eventsByIntegration[item.id] || []}
+                    eventsLoading={eventsLoading}
                     busyAction={actionId}
                     onEdit={() => startEdit(item)}
                     onRotate={() => rotate(item)}
@@ -270,8 +294,10 @@ function CustomerDashboard({ session }: { session: AuthSession }) {
   );
 }
 
-function IntegrationCard({ item, busyAction, onEdit, onRotate, onRemove }: {
+function IntegrationCard({ item, events, eventsLoading, busyAction, onEdit, onRotate, onRemove }: {
   item: CustomerIntegration;
+  events: CustomerIntegrationEvent[];
+  eventsLoading: boolean;
   busyAction: string;
   onEdit: () => void;
   onRotate: () => void;
@@ -298,6 +324,8 @@ function IntegrationCard({ item, busyAction, onEdit, onRotate, onRemove }: {
         <Detail label="Webhook endpoint" value={item.webhookEndpoint || 'Created after key issue'} code />
       </div>
 
+      <RecentEvents events={events} loading={eventsLoading} />
+
       {item.notes && <p style={styles.notes}>{item.notes}</p>}
 
       <div style={styles.cardActions}>
@@ -306,6 +334,28 @@ function IntegrationCard({ item, busyAction, onEdit, onRotate, onRemove }: {
         <button type="button" onClick={onRemove} disabled={rotating || deleting} style={styles.dangerButton}>{deleting ? 'Deleting...' : 'Delete'}</button>
       </div>
     </article>
+  );
+}
+
+function RecentEvents({ events, loading }: { events: CustomerIntegrationEvent[]; loading: boolean }) {
+  return (
+    <section style={styles.eventsPanel}>
+      <div style={styles.eventsHeader}>
+        <div style={styles.detailLabel}>Recent events</div>
+        <span style={styles.eventsCount}>{loading ? 'Loading' : `${events.length} shown`}</span>
+      </div>
+      {loading && <div style={styles.eventEmpty}>Loading accepted events.</div>}
+      {!loading && events.length === 0 && <div style={styles.eventEmpty}>No events accepted yet.</div>}
+      {!loading && events.slice(0, 4).map((event) => (
+        <div key={event.id} style={styles.eventRow}>
+          <div style={styles.eventMain}>
+            <span style={styles.eventStatus}>{event.status}</span>
+            <span style={styles.eventType}>{event.source} / {event.eventType}</span>
+          </div>
+          <div style={styles.eventMeta}>{event.message || event.eventId || 'Synthetic event'} · {formatDate(event.observedAt || event.createdAt)}</div>
+        </div>
+      ))}
+    </section>
   );
 }
 
@@ -369,6 +419,13 @@ function readApiError(err: any, fallback: string) {
   return Array.isArray(message) ? message.join(', ') : message || err?.message || fallback;
 }
 
+function formatDate(value?: string | null) {
+  if (!value) return 'not timestamped';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return 'not timestamped';
+  return date.toLocaleString();
+}
+
 const styles: Record<string, React.CSSProperties> = {
   shell: { minHeight: '100vh', background: '#101820', color: '#edf3f7' },
   header: { borderBottom: '1px solid #263746', background: '#101820' },
@@ -418,6 +475,15 @@ const styles: Record<string, React.CSSProperties> = {
   detailLabel: { color: '#8fa4b5', fontSize: '0.76rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0, marginBottom: '0.2rem' },
   detailValue: { color: '#edf3f7', overflowWrap: 'anywhere', lineHeight: 1.45 },
   detailCode: { display: 'block', color: '#dbe8ee', background: '#101820', border: '1px solid #263746', borderRadius: '8px', padding: '0.55rem', overflowWrap: 'anywhere', lineHeight: 1.45 },
+  eventsPanel: { borderTop: '1px solid #263746', marginTop: '0.9rem', paddingTop: '0.85rem', display: 'grid', gap: '0.55rem' },
+  eventsHeader: { display: 'flex', justifyContent: 'space-between', gap: '0.75rem', alignItems: 'center' },
+  eventsCount: { color: '#8fa4b5', fontSize: '0.78rem', fontWeight: 800 },
+  eventRow: { background: '#101820', border: '1px solid #263746', borderRadius: '8px', padding: '0.62rem', display: 'grid', gap: '0.3rem' },
+  eventMain: { display: 'flex', gap: '0.45rem', alignItems: 'center', flexWrap: 'wrap' },
+  eventStatus: { color: '#bdf5ed', fontWeight: 800, textTransform: 'capitalize', fontSize: '0.82rem' },
+  eventType: { color: '#c7d2da', fontSize: '0.82rem' },
+  eventMeta: { color: '#8fa4b5', fontSize: '0.78rem', overflowWrap: 'anywhere' },
+  eventEmpty: { color: '#8fa4b5', fontSize: '0.86rem', background: '#101820', border: '1px solid #263746', borderRadius: '8px', padding: '0.62rem' },
   notes: { color: '#b5c4ce', lineHeight: 1.5, borderTop: '1px solid #263746', marginTop: '0.85rem', paddingTop: '0.85rem' },
   cardActions: { display: 'flex', gap: '0.55rem', marginTop: '0.9rem', flexWrap: 'wrap' },
   secondaryButton: { background: '#213240', border: '1px solid #365060', color: '#edf3f7', borderRadius: '8px', padding: '0.55rem 0.75rem', cursor: 'pointer' },

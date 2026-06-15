@@ -2,12 +2,12 @@
 
 ```yaml
 id: EP-TASK-003
-status: reviewed
+status: validated
 source_task: ../11_tasks/TASK-003-customer-integration-ingest-and-webhook-activation.md
 owner: Operations Lead
 created: 2026-06-15
 last_updated: 2026-06-15
-completeness_level: complete
+completeness_level: validated
 ```
 
 ## Metadata
@@ -340,10 +340,10 @@ You are a coding agent working in monitoring-microservice under the Intent Prese
 ## Completion Checklist
 
 - [ ] Execution plan reviewed or approved by owner.
-- [ ] Backend ingest/webhook contract implemented.
-- [ ] Event persistence and owner-scoped listing implemented.
-- [ ] Customer dashboard event visibility implemented.
-- [ ] Focused key and owner-scope tests complete.
+- [x] Backend ingest/webhook contract implemented.
+- [x] Event persistence and owner-scoped listing implemented.
+- [x] Customer dashboard event visibility implemented.
+- [x] Focused key and owner-scope tests complete.
 - [ ] Documentation and graph updated.
-- [ ] Validation evidence collected.
+- [x] Validation evidence collected.
 - [ ] Deviations documented.
