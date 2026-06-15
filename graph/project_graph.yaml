@@ -62,6 +62,27 @@ nodes:
   - id: VAL-TASK-002-saas-access-and-customer-onboarding
     type: ValidationReport
     path: 12_validation/VAL-TASK-002-saas-access-and-customer-onboarding.md
+  - id: MS-003
+    type: Milestone
+    path: 09_milestones/MS-003-customer-integration-ingest-and-webhook-activation.md
+  - id: GOAL-IMPACT-TASK-003
+    type: Goal
+    path: 22_goal_impact/GOAL-IMPACT-TASK-003.md
+  - id: FEAT-003
+    type: Feature
+    path: 10_features/FEAT-003-customer-integration-ingest-and-webhook-activation.md
+  - id: TASK-003
+    type: Task
+    path: 11_tasks/TASK-003-customer-integration-ingest-and-webhook-activation.md
+  - id: EP-TASK-003
+    type: ExecutionPlan
+    path: 21_execution_plans/EP-TASK-003-customer-integration-ingest-and-webhook-activation.md
+  - id: CP-TASK-003-customer-integration-ingest-and-webhook-activation
+    type: ContextPackage
+    path: 13_context_packages/CP-TASK-003-customer-integration-ingest-and-webhook-activation.md
+  - id: PROMPT-TASK-003-customer-integration-ingest-and-webhook-activation
+    type: CodingPrompt
+    path: 14_prompts/PROMPT-TASK-003-customer-integration-ingest-and-webhook-activation.md
 edges:
   - from: VISION-001
     type: decomposes_into
@@ -147,3 +168,39 @@ edges:
   - from: VAL-TASK-002-saas-access-and-customer-onboarding
     type: validates
     to: TASK-002
+  - from: ROADMAP-001
+    type: decomposes_into
+    to: MS-003
+  - from: MS-003
+    type: decomposes_into
+    to: FEAT-003
+  - from: SYS-001
+    type: decomposes_into
+    to: FEAT-003
+  - from: TASK-003
+    type: implements
+    to: FEAT-003
+  - from: TASK-003
+    type: impacts_goal
+    to: GOAL-IMPACT-TASK-003
+  - from: TASK-003
+    type: decomposes_into
+    to: EP-TASK-003
+  - from: EP-TASK-003
+    type: derives_from
+    to: TASK-003
+  - from: EP-TASK-003
+    type: generates
+    to: PROMPT-TASK-003-customer-integration-ingest-and-webhook-activation
+  - from: EP-TASK-003
+    type: constrained_by
+    to: ADR-001
+  - from: EP-TASK-003
+    type: constrained_by
+    to: ARCH-001
+  - from: PROMPT-TASK-003-customer-integration-ingest-and-webhook-activation
+    type: derives_from
+    to: EP-TASK-003
+  - from: PROMPT-TASK-003-customer-integration-ingest-and-webhook-activation
+    type: included_in_context
+    to: CP-TASK-003-customer-integration-ingest-and-webhook-activation
