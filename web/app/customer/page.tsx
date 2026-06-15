@@ -65,14 +65,15 @@ function CustomerDashboard({ session }: { session: AuthSession }) {
       setItems(integrations);
       const eventEntries = await Promise.all(integrations.map(async (item) => {
         try {
-          return [item.id, await api.getCustomerIntegrationEvents(token, item.id)] as const;
+          return { id: item.id, events: await api.getCustomerIntegrationEvents(token, item.id), failed: false };
         } catch {
-          return [item.id, []] as const;
+          return { id: item.id, events: [], failed: true };
         }
       }));
-      setEventsByIntegration(Object.fromEntries(eventEntries));
-      if (integrations.length > 0 && eventEntries.every(([, events]) => events.length === 0)) {
-        setEventsError('');
+      setEventsByIntegration(Object.fromEntries(eventEntries.map(({ id, events }) => [id, events])));
+      const failedEventLoads = eventEntries.filter((entry) => entry.failed).length;
+      if (failedEventLoads > 0) {
+        setEventsError('Unable to load recent events for ' + failedEventLoads + ' integration' + (failedEventLoads === 1 ? '' : 's') + '.');
       }
     } catch (err: any) {
       setError(readApiError(err, 'Unable to load integrations'));
@@ -338,15 +339,22 @@ function IntegrationCard({ item, events, eventsLoading, busyAction, onEdit, onRo
 }
 
 function RecentEvents({ events, loading }: { events: CustomerIntegrationEvent[]; loading: boolean }) {
+  const displayedEvents = events.slice(0, 4);
+  const countLabel = loading
+    ? 'Loading'
+    : events.length > displayedEvents.length
+      ? displayedEvents.length + ' of ' + events.length + ' shown'
+      : displayedEvents.length + ' shown';
+
   return (
     <section style={styles.eventsPanel}>
       <div style={styles.eventsHeader}>
         <div style={styles.detailLabel}>Recent events</div>
-        <span style={styles.eventsCount}>{loading ? 'Loading' : `${events.length} shown`}</span>
+        <span style={styles.eventsCount}>{countLabel}</span>
       </div>
       {loading && <div style={styles.eventEmpty}>Loading accepted events.</div>}
       {!loading && events.length === 0 && <div style={styles.eventEmpty}>No events accepted yet.</div>}
-      {!loading && events.slice(0, 4).map((event) => (
+      {!loading && displayedEvents.map((event) => (
         <div key={event.id} style={styles.eventRow}>
           <div style={styles.eventMain}>
             <span style={styles.eventStatus}>{event.status}</span>
