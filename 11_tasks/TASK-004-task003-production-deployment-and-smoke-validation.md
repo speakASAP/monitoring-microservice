@@ -80,7 +80,7 @@ Smoke checks should use client-supplied synthetic event ids so repeated executio
 - [x] API and web rollout status is checked for immutable tag `99a4f0c`.
 - [x] Valid synthetic ingest and webhook submissions are accepted with 202 responses.
 - [x] Invalid key submission is rejected generically with 401.
-- [x] Owner-scoped event listing is credential-gated by missing approved smoke Auth token; anonymous listing returned 401 and persisted synthetic rows retain owner linkage.
+- [x] Owner-scoped event listing is verified with a synthetic Auth smoke token stored in Vault and synced through Kubernetes Secret key names.
 - [x] Anonymous operational API access remains protected for guarded admin and customer routes.
 - [x] Strict documentation audit, pre-coding gate, and deployment-readiness gate pass before closure.
 

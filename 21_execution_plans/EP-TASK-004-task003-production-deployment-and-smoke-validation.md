@@ -147,7 +147,7 @@ You are a deployment/smoke validation agent for TASK-004 in monitoring-microserv
 - [x] Rollout checks complete
 - [x] Valid synthetic key smoke complete
 - [x] Invalid key smoke complete
-- [x] Event listing credential gate recorded
+- [x] Authenticated event listing verified
 - [x] Documentation updated
 - [x] Gates passed
 - [x] Commit and push complete

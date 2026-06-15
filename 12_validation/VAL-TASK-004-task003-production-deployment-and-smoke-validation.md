@@ -27,7 +27,7 @@ Validated TASK-004 production deployment and smoke validation for TASK-003 custo
 | Duplicate synthetic event id idempotent | Pass | Repeat ingest returned 202 with duplicate=true. |
 | Valid synthetic webhook accepted | Pass | `POST /api/customer/webhooks/:apiKeyId` returned 202 and persisted a `webhook` event. |
 | Invalid key rejected | Pass | Invalid-key ingest returned 401. |
-| Owner-scoped event listing | Partial | Approved smoke Auth token was unavailable. Anonymous listing returned 401 and DB rows retained owner linkage. |
+| Owner-scoped event listing | Pass | Synthetic Auth user token was stored in Vault, synced to Kubernetes Secret key names, and `route:api-customer-integration-events` returned 200 with the synthetic event listed. |
 | Anonymous operational API protected | Pass | `route:api-services`, `route:api-alerts`, `route:api-auth-session`, and `route:api-customer-integrations` returned 401 without credentials. |
 | Registry count valid | Pass | Deployed pod compiled config reported 56 ecosystem services. |
 | Sensitive evidence masked | Pass | Evidence includes statuses and synthetic run id only; no raw keys, Auth tokens, headers, or production payloads. |
@@ -39,7 +39,10 @@ Validated TASK-004 production deployment and smoke validation for TASK-003 custo
 - Manual immutable rollout: set API and web deployments to `localhost:5000/...:99a4f0c`; both rollouts succeeded.
 - API health: `/health` returned 200 in the deployed API pod.
 - Registry verification: compiled `ECOSYSTEM_SERVICES` count is 56.
-- Smoke result id: `task004-mqf2t1j1-a58b4a`.
+- Unauthenticated smoke result id: `task004-mqf2t1j1-a58b4a`.
+- Authenticated owner-listing smoke result id: `task004-auth-mqf81ns9-d5c5db`; Auth registration and validation passed, ingest returned 202, owner event listing returned 200, and the synthetic event was found.
+- Vault storage: the monitoring production Vault secret contains smoke token properties `MONITORING_SMOKE_AUTH_TOKEN` and `MONITORING_SMOKE_REFRESH_TOKEN`.
+- Kubernetes Secret sync: `monitoring-microservice-secret` contains key names `MONITORING_SMOKE_AUTH_TOKEN` and `MONITORING_SMOKE_REFRESH_TOKEN` with ESO `SecretSynced=True`.
 - Strict documentation audit, pre-coding gate, and deployment-readiness gate were run after this report.
 
 ## Invariant evidence
@@ -62,11 +65,10 @@ Smoke used client-supplied synthetic event ids. Replaying the ingest event id re
 
 - The deploy script used `:latest` for `kubectl set image`, so Kubernetes did not roll pods when the image field was unchanged. The script is updated to set immutable `$API_IMAGE` and `$WEB_IMAGE` tags.
 - The deploy script registry verification called `route:api-services-list`, which is guarded in the deployed API. The script is updated to count compiled `ECOSYSTEM_SERVICES` inside the pod instead.
-- Authenticated owner-scoped event listing was not executed because no approved smoke Auth token was available.
 
 ## Recommendation
 
-Accept TASK-004 deployment and smoke validation. Follow-up work should verify authenticated customer event listing with an approved smoke Auth token or a documented test Auth fixture.
+Accept TASK-004 deployment and smoke validation. Authenticated customer event listing is now verified with a synthetic Auth smoke token stored through Vault and ESO.
 
 ## Traceability confirmation
 
