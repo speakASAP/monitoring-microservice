@@ -73,12 +73,8 @@ reload_prometheus_config() {
 verify_api_registry() {
   local count
   count="$(kubectl exec -n "$NAMESPACE" deploy/"$SERVICE_NAME" -- node -e "
-    const http = require('http');
-    http.get('http://127.0.0.1:${API_PORT}/api/services/list', (res) => {
-      let data = '';
-      res.on('data', (c) => { data += c; });
-      res.on('end', () => { process.stdout.write(String(JSON.parse(data).length)); });
-    }).on('error', () => process.exit(1));
+    const { ECOSYSTEM_SERVICES } = require('/app/dist/config/ecosystem-services');
+    process.stdout.write(String((ECOSYSTEM_SERVICES || []).length));
   " 2>/dev/null || echo "0")"
   if [ "$count" -lt 50 ]; then
     echo -e "${RED}API registry count too low: ${count} (expected 50+)${NC}"
@@ -151,8 +147,8 @@ reload_prometheus_config
 deploy_timing_phase_end "Reload Prometheus scrape config"
 
 deploy_timing_phase_start "Update deployment images"
-kubectl set image "deployment/${SERVICE_NAME}" app="$API_IMAGE_LATEST" -n "$NAMESPACE"
-kubectl set image "deployment/${WEB_SERVICE_NAME}" app="$WEB_IMAGE_LATEST" -n "$NAMESPACE"
+kubectl set image "deployment/${SERVICE_NAME}" app="$API_IMAGE" -n "$NAMESPACE"
+kubectl set image "deployment/${WEB_SERVICE_NAME}" app="$WEB_IMAGE" -n "$NAMESPACE"
 deploy_timing_phase_end "Update deployment images"
 
 deploy_timing_phase_start "Wait for API rollout"

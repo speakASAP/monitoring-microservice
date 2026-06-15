@@ -107,6 +107,9 @@ nodes:
   - id: PROMPT-TASK-004-task003-production-deployment-and-smoke-validation
     type: CodingPrompt
     path: 14_prompts/PROMPT-TASK-004-task003-production-deployment-and-smoke-validation.md
+  - id: VAL-TASK-004-task003-production-deployment-and-smoke-validation
+    type: ValidationReport
+    path: 12_validation/VAL-TASK-004-task003-production-deployment-and-smoke-validation.md
 edges:
   - from: VISION-001
     type: decomposes_into
@@ -267,3 +270,6 @@ edges:
   - from: PROMPT-TASK-004-task003-production-deployment-and-smoke-validation
     type: included_in_context
     to: CP-TASK-004-task003-production-deployment-and-smoke-validation
+  - from: VAL-TASK-004-task003-production-deployment-and-smoke-validation
+    type: validates
+    to: TASK-004

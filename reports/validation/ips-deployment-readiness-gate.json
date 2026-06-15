@@ -1,5 +1,5 @@
 {
-  "created_at": "2026-06-15T05:44:51Z",
+  "created_at": "2026-06-15T10:41:14Z",
   "gate": "deployment_readiness",
   "next_step": "ready_for_deployment_review",
   "pre_coding_gate": {
@@ -11,7 +11,7 @@
     "status": "pass",
     "stderr": ""
   },
-  "root": "/home/ssf/Documents/Github/monitoring-microservice",
+  "root": "/home/ssf/Documents/Github/monitoring-microservice-task004-execution",
   "schema_version": "1.0.0",
   "status": "pass",
   "strict_doc_audit": {
@@ -19,8 +19,13 @@
     "score": 100,
     "status": "PASS"
   },
-  "target": "TASK-003",
+  "target": "TASK-004",
   "unresolved_markers": [
+    {
+      "line": 31,
+      "marker": "[MISSING: approved smoke token]",
+      "path": "09_milestones/MS-004-task003-production-deployment-and-smoke-validation.md"
+    },
     {
       "line": 60,
       "marker": "[MISSING: ...]",
@@ -34,14 +39,15 @@
   ],
   "validation_reports": {
     "matching_reports": [
-      "12_validation/VAL-TASK-003-customer-integration-ingest-and-webhook-activation.md"
+      "12_validation/VAL-TASK-004-task003-production-deployment-and-smoke-validation.md"
     ],
     "reports": [
       "12_validation/VAL-TASK-001-ips-governance-baseline.md",
       "12_validation/VAL-TASK-002-saas-access-and-customer-onboarding.md",
-      "12_validation/VAL-TASK-003-customer-integration-ingest-and-webhook-activation.md"
+      "12_validation/VAL-TASK-003-customer-integration-ingest-and-webhook-activation.md",
+      "12_validation/VAL-TASK-004-task003-production-deployment-and-smoke-validation.md"
     ],
     "status": "pass",
-    "target": "TASK-003"
+    "target": "TASK-004"
   }
 }

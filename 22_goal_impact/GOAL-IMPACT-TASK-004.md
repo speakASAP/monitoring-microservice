@@ -18,7 +18,7 @@ upstream_links:
 downstream_links:
   - 21_execution_plans/EP-TASK-004-task003-production-deployment-and-smoke-validation.md
 validation_method: Deployment evidence, sanitized smoke checks, strict documentation audit, and IPS gates.
-status: reviewed
+status: validated
 ```
 
 ## Explanation

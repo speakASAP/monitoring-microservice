@@ -2,7 +2,7 @@
 
 ```yaml
 id: EP-TASK-004
-status: reviewed
+status: validated
 source_task: ../11_tasks/TASK-004-task003-production-deployment-and-smoke-validation.md
 owner: Operations Lead
 created: 2026-06-15
@@ -12,7 +12,7 @@ completeness_level: complete
 
 ## Metadata
 
-Owner: Operations Lead. Status: reviewed. Source task: `11_tasks/TASK-004-task003-production-deployment-and-smoke-validation.md`. Lifecycle state: deployment planning, blocked on explicit deployment approval. Execution mode: parallel-ready after deployment approval.
+Owner: Operations Lead. Status: reviewed. Source task: `11_tasks/TASK-004-task003-production-deployment-and-smoke-validation.md`. Lifecycle state: deployment and smoke validation complete. Execution mode: parallel-ready after deployment approval.
 
 ## Upstream Traceability
 
@@ -142,12 +142,12 @@ You are a deployment/smoke validation agent for TASK-004 in monitoring-microserv
 
 ## Completion Checklist
 
-- [ ] Deployment approval confirmed
-- [ ] Deployment complete
-- [ ] Rollout checks complete
-- [ ] Valid synthetic key smoke complete
-- [ ] Invalid key smoke complete
-- [ ] Event listing verified or missing credential recorded
-- [ ] Documentation updated
-- [ ] Gates passed
-- [ ] Commit and push complete
+- [x] Deployment approval confirmed
+- [x] Deployment complete
+- [x] Rollout checks complete
+- [x] Valid synthetic key smoke complete
+- [x] Invalid key smoke complete
+- [x] Event listing credential gate recorded
+- [x] Documentation updated
+- [x] Gates passed
+- [x] Commit and push complete
