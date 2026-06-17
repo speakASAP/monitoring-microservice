@@ -15,7 +15,7 @@ export class ServicesService {
   getEcosystemServices() {
     return ECOSYSTEM_SERVICES.map((s) => ({
       ...s,
-      monitorable: s.kind === 'service' && s.port > 0,
+      monitorable: s.kind === 'service' && s.port > 0 && s.monitorable !== false,
       internalUrl: s.port > 0 ? buildInternalUrl(s.name, s.port) : '',
     }));
   }

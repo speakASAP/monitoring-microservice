@@ -24,7 +24,7 @@ data:
 
       - job_name: 'node-exporter'
         static_configs:
-          - targets: ['192.168.88.53:9100']
+          - targets: ['node-exporter.statex-apps.svc.cluster.local:9100']
 
       - job_name: 'kube-state-metrics'
         static_configs:
@@ -42,14 +42,14 @@ data:
             - http://ai-microservice:3380/health
             - http://minio-microservice:9000/minio/health/live
             - http://database-server-frontend:3390/health
-            - http://vault-microservice:8200/v1/sys/health
+            - http://192.168.88.53:8200/v1/sys/health
             - http://monitoring-microservice:3395/health
             - http://monitoring-web:3396/
             - http://catalog-microservice:3200/health
-            - http://warehouse-microservice:3201/health
+            - http://warehouse-microservice:3201/api/health
             - http://orders-microservice:3203/health
             - http://payments-microservice:3468/health
-            - http://suppliers-microservice:3202/health
+            - http://suppliers-microservice:3202/api/health
             - http://leads-microservice:4400/health
             - http://marketing-microservice:4600/health
             - http://prompts-microservice:4750/health
@@ -61,8 +61,7 @@ data:
             - http://runlayer:3390/health
             - http://goalkeeper:3392/health
             - http://flipflop-service:3000/health
-            - http://crypto-ai-agent:3000/health
-            - http://beauty:3000/health
+            - http://crypto-ai-agent:3000/api/health
             - http://marathon:3000/health
             - http://shop-assistant:4500/health
             - http://school-committee:4800/health
@@ -82,7 +81,7 @@ data:
             - http://speakasap-salary:4212/health
             - http://speakasap-financial:4213/health
             - http://rehtani:4601/
-            - http://statex-ecosystem:4710/health
+            - http://statex-ecosystem:4710/api/health
         relabel_configs:
           - source_labels: [__address__]
             target_label: __param_target

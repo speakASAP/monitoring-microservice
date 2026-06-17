@@ -14,7 +14,6 @@ spec:
       labels:
         app: node-exporter
     spec:
-      hostNetwork: true
       hostPID: true
       tolerations:
         - operator: Exists
@@ -28,7 +27,6 @@ spec:
             - --collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)
           ports:
             - containerPort: 9100
-              hostPort: 9100
           volumeMounts:
             - name: proc
               mountPath: /host/proc
