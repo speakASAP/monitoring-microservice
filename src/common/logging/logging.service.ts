@@ -20,6 +20,8 @@ export class LoggingService {
         duration_ms: 0,
         ...extra,
       }, { timeout: 3000 });
-    } catch {}
+    } catch {
+      return;
+    }
   }
 }

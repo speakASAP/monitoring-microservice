@@ -1,4 +1,4 @@
-import { computeDiff, formatDigestMessage, DigestDiff } from './digest.utils';
+import { computeDiff, formatDigestMessage } from './digest.utils';
 import { SnapshotServiceEntry } from './service-health-snapshot.entity';
 
 const healthy = (name: string): SnapshotServiceEntry => ({ name, healthy: true, responseTimeMs: 50 });
