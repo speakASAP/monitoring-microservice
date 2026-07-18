@@ -19,10 +19,10 @@ This repository follows the company standard in the numbered IPS directories.
 
 Before code changes, read:
 
-- `00_constitution/CONSTITUTION.md`
-- `01_vision/VISION.md`
-- `17_governance/PROJECT_INVARIANTS.md`
-- relevant `11_tasks/`, `21_execution_plans/`, `22_goal_impact/`, and `12_validation/` artifacts
+- `docs/00_constitution/CONSTITUTION.md`
+- `docs/01_vision/VISION.md`
+- `docs/17_governance/PROJECT_INVARIANTS.md`
+- relevant `docs/11_tasks/`, `docs/21_execution_plans/`, `docs/22_goal_impact/`, and `docs/12_validation/` artifacts
 
 Required gates for governance or deployment-impacting work:
 

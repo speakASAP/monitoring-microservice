@@ -2,7 +2,7 @@
 
 Centralized observability platform for the Statex ecosystem.
 
-This repository follows the company Intent Preservation System documented under the numbered IPS folders. Start with `00_constitution/CONSTITUTION.md`, `01_vision/VISION.md`, `SYSTEM.md`, and `16_operations/LOCAL_WORKFLOW.md` before implementation work.
+This repository follows the company Intent Preservation System documented under the numbered IPS folders. Start with `docs/00_constitution/CONSTITUTION.md`, `docs/01_vision/VISION.md`, `SYSTEM.md`, and `docs/16_operations/LOCAL_WORKFLOW.md` before implementation work.
 
 ## Key commands
 

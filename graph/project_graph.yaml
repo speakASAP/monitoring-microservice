@@ -1,115 +1,115 @@
 nodes:
   - id: VISION-001
     type: Vision
-    path: 01_vision/VISION.md
+    path: docs/01_vision/VISION.md
   - id: ROADMAP-001
     type: Roadmap
-    path: 08_roadmap/ROADMAP.md
+    path: docs/08_roadmap/ROADMAP.md
   - id: MS-001
     type: Milestone
-    path: 09_milestones/MS-001-ips-governance-baseline.md
+    path: docs/09_milestones/MS-001-ips-governance-baseline.md
   - id: MS-002
     type: Milestone
-    path: 09_milestones/MS-002-saas-access-and-customer-onboarding.md
+    path: docs/09_milestones/MS-002-saas-access-and-customer-onboarding.md
   - id: GOAL-IPS-GOVERNANCE
     type: Goal
-    path: 22_goal_impact/GOAL-IMPACT-TASK-001.md
+    path: docs/22_goal_impact/GOAL-IMPACT-TASK-001.md
   - id: ARCH-001
     type: ArchitectureDocument
-    path: 06_architecture/ARCHITECTURE_OVERVIEW.md
+    path: docs/06_architecture/ARCHITECTURE_OVERVIEW.md
   - id: ADR-001
     type: ADR
-    path: 07_decisions/ADR-001-use-ips-governance-baseline.md
+    path: docs/07_decisions/ADR-001-use-ips-governance-baseline.md
   - id: SYS-001
     type: System
-    path: 04_systems/SYS-001-monitoring-platform.md
+    path: docs/04_systems/SYS-001-monitoring-platform.md
   - id: FEAT-001
     type: Feature
-    path: 10_features/FEAT-001-ips-governance-baseline.md
+    path: docs/10_features/FEAT-001-ips-governance-baseline.md
   - id: TASK-001
     type: Task
-    path: 11_tasks/TASK-001-implement-ips-governance-baseline.md
+    path: docs/11_tasks/TASK-001-implement-ips-governance-baseline.md
   - id: EP-TASK-001
     type: ExecutionPlan
-    path: 21_execution_plans/EP-TASK-001-implement-ips-governance-baseline.md
+    path: docs/21_execution_plans/EP-TASK-001-implement-ips-governance-baseline.md
   - id: CP-TASK-001-ips-governance-baseline
     type: ContextPackage
-    path: 13_context_packages/CP-TASK-001-ips-governance-baseline.md
+    path: docs/13_context_packages/CP-TASK-001-ips-governance-baseline.md
   - id: PROMPT-TASK-001-ips-governance-baseline
     type: CodingPrompt
-    path: 14_prompts/PROMPT-TASK-001-ips-governance-baseline.md
+    path: docs/14_prompts/PROMPT-TASK-001-ips-governance-baseline.md
   - id: VAL-TASK-001-ips-governance-baseline
     type: ValidationReport
-    path: 12_validation/VAL-TASK-001-ips-governance-baseline.md
+    path: docs/12_validation/VAL-TASK-001-ips-governance-baseline.md
   - id: GOAL-SaaS-ACCESS
     type: Goal
-    path: 22_goal_impact/GOAL-IMPACT-TASK-002.md
+    path: docs/22_goal_impact/GOAL-IMPACT-TASK-002.md
   - id: FEAT-002
     type: Feature
-    path: 10_features/FEAT-002-saas-access-and-customer-onboarding.md
+    path: docs/10_features/FEAT-002-saas-access-and-customer-onboarding.md
   - id: TASK-002
     type: Task
-    path: 11_tasks/TASK-002-implement-saas-access-and-customer-onboarding.md
+    path: docs/11_tasks/TASK-002-implement-saas-access-and-customer-onboarding.md
   - id: EP-TASK-002
     type: ExecutionPlan
-    path: 21_execution_plans/EP-TASK-002-saas-access-and-customer-onboarding.md
+    path: docs/21_execution_plans/EP-TASK-002-saas-access-and-customer-onboarding.md
   - id: CP-TASK-002-saas-access-and-customer-onboarding
     type: ContextPackage
-    path: 13_context_packages/CP-TASK-002-saas-access-and-customer-onboarding.md
+    path: docs/13_context_packages/CP-TASK-002-saas-access-and-customer-onboarding.md
   - id: PROMPT-TASK-002-saas-access-and-customer-onboarding
     type: CodingPrompt
-    path: 14_prompts/PROMPT-TASK-002-saas-access-and-customer-onboarding.md
+    path: docs/14_prompts/PROMPT-TASK-002-saas-access-and-customer-onboarding.md
   - id: VAL-TASK-002-saas-access-and-customer-onboarding
     type: ValidationReport
-    path: 12_validation/VAL-TASK-002-saas-access-and-customer-onboarding.md
+    path: docs/12_validation/VAL-TASK-002-saas-access-and-customer-onboarding.md
   - id: MS-003
     type: Milestone
-    path: 09_milestones/MS-003-customer-integration-ingest-and-webhook-activation.md
+    path: docs/09_milestones/MS-003-customer-integration-ingest-and-webhook-activation.md
   - id: GOAL-IMPACT-TASK-003
     type: Goal
-    path: 22_goal_impact/GOAL-IMPACT-TASK-003.md
+    path: docs/22_goal_impact/GOAL-IMPACT-TASK-003.md
   - id: FEAT-003
     type: Feature
-    path: 10_features/FEAT-003-customer-integration-ingest-and-webhook-activation.md
+    path: docs/10_features/FEAT-003-customer-integration-ingest-and-webhook-activation.md
   - id: TASK-003
     type: Task
-    path: 11_tasks/TASK-003-customer-integration-ingest-and-webhook-activation.md
+    path: docs/11_tasks/TASK-003-customer-integration-ingest-and-webhook-activation.md
   - id: EP-TASK-003
     type: ExecutionPlan
-    path: 21_execution_plans/EP-TASK-003-customer-integration-ingest-and-webhook-activation.md
+    path: docs/21_execution_plans/EP-TASK-003-customer-integration-ingest-and-webhook-activation.md
   - id: CP-TASK-003-customer-integration-ingest-and-webhook-activation
     type: ContextPackage
-    path: 13_context_packages/CP-TASK-003-customer-integration-ingest-and-webhook-activation.md
+    path: docs/13_context_packages/CP-TASK-003-customer-integration-ingest-and-webhook-activation.md
   - id: PROMPT-TASK-003-customer-integration-ingest-and-webhook-activation
     type: CodingPrompt
-    path: 14_prompts/PROMPT-TASK-003-customer-integration-ingest-and-webhook-activation.md
+    path: docs/14_prompts/PROMPT-TASK-003-customer-integration-ingest-and-webhook-activation.md
   - id: VAL-TASK-003-customer-integration-ingest-and-webhook-activation
     type: ValidationReport
-    path: 12_validation/VAL-TASK-003-customer-integration-ingest-and-webhook-activation.md
+    path: docs/12_validation/VAL-TASK-003-customer-integration-ingest-and-webhook-activation.md
   - id: MS-004
     type: Milestone
-    path: 09_milestones/MS-004-task003-production-deployment-and-smoke-validation.md
+    path: docs/09_milestones/MS-004-task003-production-deployment-and-smoke-validation.md
   - id: GOAL-IMPACT-TASK-004
     type: Goal
-    path: 22_goal_impact/GOAL-IMPACT-TASK-004.md
+    path: docs/22_goal_impact/GOAL-IMPACT-TASK-004.md
   - id: FEAT-004
     type: Feature
-    path: 10_features/FEAT-004-task003-production-deployment-and-smoke-validation.md
+    path: docs/10_features/FEAT-004-task003-production-deployment-and-smoke-validation.md
   - id: TASK-004
     type: Task
-    path: 11_tasks/TASK-004-task003-production-deployment-and-smoke-validation.md
+    path: docs/11_tasks/TASK-004-task003-production-deployment-and-smoke-validation.md
   - id: EP-TASK-004
     type: ExecutionPlan
-    path: 21_execution_plans/EP-TASK-004-task003-production-deployment-and-smoke-validation.md
+    path: docs/21_execution_plans/EP-TASK-004-task003-production-deployment-and-smoke-validation.md
   - id: CP-TASK-004-task003-production-deployment-and-smoke-validation
     type: ContextPackage
-    path: 13_context_packages/CP-TASK-004-task003-production-deployment-and-smoke-validation.md
+    path: docs/13_context_packages/CP-TASK-004-task003-production-deployment-and-smoke-validation.md
   - id: PROMPT-TASK-004-task003-production-deployment-and-smoke-validation
     type: CodingPrompt
-    path: 14_prompts/PROMPT-TASK-004-task003-production-deployment-and-smoke-validation.md
+    path: docs/14_prompts/PROMPT-TASK-004-task003-production-deployment-and-smoke-validation.md
   - id: VAL-TASK-004-task003-production-deployment-and-smoke-validation
     type: ValidationReport
-    path: 12_validation/VAL-TASK-004-task003-production-deployment-and-smoke-validation.md
+    path: docs/12_validation/VAL-TASK-004-task003-production-deployment-and-smoke-validation.md
 edges:
   - from: VISION-001
     type: decomposes_into

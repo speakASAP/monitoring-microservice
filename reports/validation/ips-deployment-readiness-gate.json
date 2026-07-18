@@ -24,7 +24,7 @@
     {
       "line": 31,
       "marker": "[MISSING: approved smoke token]",
-      "path": "09_milestones/MS-004-task003-production-deployment-and-smoke-validation.md"
+      "path": "docs/09_milestones/MS-004-task003-production-deployment-and-smoke-validation.md"
     },
     {
       "line": 60,
@@ -39,13 +39,13 @@
   ],
   "validation_reports": {
     "matching_reports": [
-      "12_validation/VAL-TASK-004-task003-production-deployment-and-smoke-validation.md"
+      "docs/12_validation/VAL-TASK-004-task003-production-deployment-and-smoke-validation.md"
     ],
     "reports": [
-      "12_validation/VAL-TASK-001-ips-governance-baseline.md",
-      "12_validation/VAL-TASK-002-saas-access-and-customer-onboarding.md",
-      "12_validation/VAL-TASK-003-customer-integration-ingest-and-webhook-activation.md",
-      "12_validation/VAL-TASK-004-task003-production-deployment-and-smoke-validation.md"
+      "docs/12_validation/VAL-TASK-001-ips-governance-baseline.md",
+      "docs/12_validation/VAL-TASK-002-saas-access-and-customer-onboarding.md",
+      "docs/12_validation/VAL-TASK-003-customer-integration-ingest-and-webhook-activation.md",
+      "docs/12_validation/VAL-TASK-004-task003-production-deployment-and-smoke-validation.md"
     ],
     "status": "pass",
     "target": "TASK-004"
