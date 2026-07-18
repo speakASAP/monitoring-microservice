@@ -58,7 +58,6 @@ export const ECOSYSTEM_SERVICES: EcosystemServiceDefinition[] = [
   { name: 'statex', port: 3000, domain: 'alfares.cz', category: 'application', kind: 'service', healthPath: '/api/health' },
   { name: 'speakasap', port: 3000, domain: 'speakasap.alfares.cz', category: 'application', kind: 'service' },
   { name: 'speakasap-portal', port: 0, domain: 'speakasap-portal', category: 'application', kind: 'repository' },
-  { name: 'openclaw', port: 0, domain: '-', category: 'application', kind: 'repository' },
 
   // Speakasap microservices (42xx)
   { name: 'speakasap-content', port: 4201, domain: 'speakasap.alfares.cz', category: 'speakasap', kind: 'service' },
