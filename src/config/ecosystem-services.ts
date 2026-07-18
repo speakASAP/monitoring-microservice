@@ -23,7 +23,6 @@ export const ECOSYSTEM_SERVICES: EcosystemServiceDefinition[] = [
   { name: 'monitoring-microservice', port: 3395, domain: 'monitoring.alfares.cz', category: 'infrastructure', kind: 'service' },
   { name: 'monitoring-web', port: 3396, domain: 'monitoring.alfares.cz', category: 'infrastructure', kind: 'service', healthPath: '/' },
   { name: 'messenger', port: 0, domain: 'messenger.alfares.cz', category: 'infrastructure', kind: 'repository' },
-  { name: 'nginx-microservice', port: 0, domain: '-', category: 'infrastructure', kind: 'repository' },
 
   // E-commerce backbone
   { name: 'catalog-microservice', port: 3200, domain: 'catalog.alfares.cz', category: 'ecommerce', kind: 'service' },
