@@ -22,12 +22,14 @@ export const ECOSYSTEM_SERVICES: EcosystemServiceDefinition[] = [
   { name: 'vault-microservice', port: 8200, domain: 'vault.alfares.cz', category: 'infrastructure', kind: 'service', healthPath: '/v1/sys/health', monitorable: false },
   { name: 'monitoring-microservice', port: 3395, domain: 'monitoring.alfares.cz', category: 'infrastructure', kind: 'service' },
   { name: 'monitoring-web', port: 3396, domain: 'monitoring.alfares.cz', category: 'infrastructure', kind: 'service', healthPath: '/' },
-  { name: 'messenger', port: 0, domain: 'messenger.alfares.cz', category: 'infrastructure', kind: 'repository' },
+  { name: 'backups-microservice', port: 3398, domain: 'backups.alfares.cz', category: 'infrastructure', kind: 'service' },
+  { name: 'docs-rag-microservice', port: 3397, domain: 'docs-rag.alfares.cz', category: 'infrastructure', kind: 'service' },
 
   // E-commerce backbone
   { name: 'catalog-microservice', port: 3200, domain: 'catalog.alfares.cz', category: 'ecommerce', kind: 'service' },
   { name: 'warehouse-microservice', port: 3201, domain: 'warehouse.alfares.cz', category: 'ecommerce', kind: 'service', healthPath: '/api/health' },
   { name: 'orders-microservice', port: 3203, domain: 'orders.alfares.cz', category: 'ecommerce', kind: 'service' },
+  { name: 'invoices-microservice', port: 3204, domain: 'invoices.alfares.cz', category: 'ecommerce', kind: 'service' },
   { name: 'payments-microservice', port: 3468, domain: 'payments.alfares.cz', category: 'ecommerce', kind: 'service' },
   { name: 'suppliers-microservice', port: 3202, domain: 'suppliers.alfares.cz', category: 'ecommerce', kind: 'service', healthPath: '/api/health' },
 
@@ -36,6 +38,7 @@ export const ECOSYSTEM_SERVICES: EcosystemServiceDefinition[] = [
   { name: 'marketing-microservice', port: 4600, domain: 'marketing.alfares.cz', category: 'business', kind: 'service' },
   { name: 'prompts-microservice', port: 4750, domain: 'prompts.alfares.cz', category: 'business', kind: 'service' },
   { name: 'agentic-email-processing-system', port: 3374, domain: 'aeps.alfares.cz', category: 'business', kind: 'service' },
+  { name: 'business-process-control-plane', port: 3375, domain: '-', category: 'business', kind: 'service', monitorable: false },
   { name: 'allegro-service', port: 3000, domain: 'allegro.alfares.cz', category: 'business', kind: 'service' },
   { name: 'aukro-service', port: 3700, domain: 'aukro.alfares.cz', category: 'business', kind: 'service' },
   { name: 'bazos-service', port: 3000, domain: 'bazos.alfares.cz', category: 'business', kind: 'service' },
@@ -47,13 +50,18 @@ export const ECOSYSTEM_SERVICES: EcosystemServiceDefinition[] = [
 
   // Applications
   { name: 'flipflop-service', port: 3000, domain: 'flipflop.alfares.cz', category: 'application', kind: 'service' },
+  { name: 'chytrakoupe-storefront', port: 3000, domain: 'chytrakoupe.alfares.cz', category: 'application', kind: 'service' },
+  { name: 'cliplot', port: 8080, domain: 'cliplot.alfares.cz', category: 'application', kind: 'service' },
+  { name: 'rent-a-box-web', port: 3000, domain: 'rent-a-box.alfares.cz', category: 'application', kind: 'service' },
+  { name: 'rent-a-box-api', port: 8000, domain: 'rent-a-box.alfares.cz', category: 'application', kind: 'service' },
   { name: 'crypto-ai-agent', port: 3000, domain: 'crypto-ai-agent.alfares.cz', category: 'application', kind: 'service', healthPath: '/api/health' },
-  { name: 'beauty', port: 3000, domain: 'beauty.alfares.cz', category: 'application', kind: 'service', monitorable: false },
   { name: 'marathon', port: 3000, domain: 'marathon.alfares.cz', category: 'application', kind: 'service' },
   { name: 'sgiprealestate', port: 4300, domain: 'sgiprealestate.alfares.cz', category: 'application', kind: 'repository' },
   { name: 'shop-assistant', port: 4500, domain: 'shop-assistant.alfares.cz', category: 'application', kind: 'service' },
   { name: 'school-committee', port: 4800, domain: 'strilkove.cz', category: 'application', kind: 'service' },
   { name: 'candidate-blueprism', port: 4850, domain: 'candidate-blueprism.alfares.cz', category: 'application', kind: 'service', healthPath: '/' },
+  { name: 'domain-research', port: 4860, domain: 'domain-research.alfares.cz', category: 'application', kind: 'service' },
+  { name: 'ecosystem-console', port: 3000, domain: 'ecosystem-console.alfares.cz', category: 'application', kind: 'service' },
   { name: 'statex', port: 3000, domain: 'alfares.cz', category: 'application', kind: 'service', healthPath: '/api/health' },
   { name: 'speakasap', port: 3000, domain: 'speakasap.alfares.cz', category: 'application', kind: 'service' },
   { name: 'speakasap-portal', port: 0, domain: 'speakasap-portal', category: 'application', kind: 'repository' },
@@ -75,14 +83,11 @@ export const ECOSYSTEM_SERVICES: EcosystemServiceDefinition[] = [
   { name: 'rehtani', port: 4601, domain: 'rehtani.alfares.cz', category: 'static', kind: 'service', healthPath: '/' },
   { name: 'statex-ecosystem', port: 4710, domain: 'statex-ecosystem.alfares.cz', category: 'static', kind: 'service', healthPath: '/api/health' },
 
-  // Planned / docs-only repos
-  { name: 'backups-microservice', port: 0, domain: '-', category: 'planned', kind: 'repository' },
-  { name: 'docs-rag-microservice', port: 0, domain: '-', category: 'planned', kind: 'repository' },
-
   // Hub / git repos (no runtime)
   { name: 'shared', port: 0, domain: '-', category: 'hub', kind: 'repository' },
   { name: 'k8s-manifests', port: 0, domain: '-', category: 'hub', kind: 'repository' },
   { name: 'vault', port: 0, domain: '-', category: 'hub', kind: 'repository' },
+  { name: 'company-evidence-platform-docs', port: 0, domain: '-', category: 'hub', kind: 'repository' },
 ];
 
 export function getMonitorableServices(): EcosystemServiceDefinition[] {
