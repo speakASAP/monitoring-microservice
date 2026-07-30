@@ -50,9 +50,9 @@ export const ECOSYSTEM_SERVICES: EcosystemServiceDefinition[] = [
 
   // Applications
   { name: 'flipflop-service', port: 3000, domain: 'flipflop.alfares.cz', category: 'application', kind: 'service' },
-  { name: 'chytrakoupe-storefront', port: 3000, domain: 'chytrakoupe.alfares.cz', category: 'application', kind: 'service' },
+  { name: 'chytrakoupe-storefront', port: 3000, domain: 'chytrakoupe.alfares.cz', category: 'application', kind: 'service', healthPath: '/api/health' },
   { name: 'cliplot', port: 8080, domain: 'cliplot.alfares.cz', category: 'application', kind: 'service' },
-  { name: 'rent-a-box-web', port: 3000, domain: 'rent-a-box.alfares.cz', category: 'application', kind: 'service' },
+  { name: 'rent-a-box-web', port: 3000, domain: 'rent-a-box.alfares.cz', category: 'application', kind: 'service', healthPath: '/api/health' },
   { name: 'rent-a-box-api', port: 8000, domain: 'rent-a-box.alfares.cz', category: 'application', kind: 'service' },
   { name: 'crypto-ai-agent', port: 3000, domain: 'crypto-ai-agent.alfares.cz', category: 'application', kind: 'service', healthPath: '/api/health' },
   { name: 'marathon', port: 3000, domain: 'marathon.alfares.cz', category: 'application', kind: 'service' },
@@ -61,7 +61,7 @@ export const ECOSYSTEM_SERVICES: EcosystemServiceDefinition[] = [
   { name: 'school-committee', port: 4800, domain: 'strilkove.cz', category: 'application', kind: 'service' },
   { name: 'candidate-blueprism', port: 4850, domain: 'candidate-blueprism.alfares.cz', category: 'application', kind: 'service', healthPath: '/' },
   { name: 'domain-research', port: 4860, domain: 'domain-research.alfares.cz', category: 'application', kind: 'service' },
-  { name: 'ecosystem-console', port: 3000, domain: 'ecosystem-console.alfares.cz', category: 'application', kind: 'service' },
+  { name: 'ecosystem-console', port: 3000, domain: 'ecosystem-console.alfares.cz', category: 'application', kind: 'service', healthPath: '/api/health' },
   { name: 'statex', port: 3000, domain: 'alfares.cz', category: 'application', kind: 'service', healthPath: '/api/health' },
   { name: 'speakasap', port: 3000, domain: 'speakasap.alfares.cz', category: 'application', kind: 'service' },
   { name: 'speakasap-portal', port: 0, domain: 'speakasap-portal', category: 'application', kind: 'repository' },

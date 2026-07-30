@@ -66,7 +66,7 @@ Two separately deployed containers that share the same repo:
 Three feature modules wired into `AppModule`:
 
 - **AlertsModule** — CRUD for `Alert` entities (PostgreSQL, schema `monitoring`). Statuses: `active` → `acknowledged` → `resolved`.
-- **ServicesModule** — Polls `/health` on every known ecosystem service (hardcoded list in `services.service.ts`). Returns status + response time.
+- **ServicesModule** — Polls each ecosystem service's health endpoint (registry in `src/config/ecosystem-services.ts`). Returns status + response time.
 - **WebhooksModule** — Receives Alertmanager webhook POSTs at `POST /api/webhooks/alertmanager`, creates `Alert` rows, and forwards notifications to `notifications-microservice`.
 
 `HealthController` exposes `GET /health` (used by K8s probes).
@@ -102,4 +102,6 @@ Deployed alongside the microservice in `statex-apps` namespace:
 
 ### Ecosystem service registry
 
-`ECOSYSTEM_SERVICES` in `src/services/services.service.ts` is the single source of truth for which services are monitored. Internal URLs follow the pattern `http://<name>.statex-apps.svc.cluster.local:<port>`.
+`ECOSYSTEM_SERVICES` in `src/config/ecosystem-services.ts` is the single source of truth for which services are monitored; `services.service.ts` only imports it. Internal URLs follow the pattern `http://<name>.statex-apps.svc.cluster.local:<port>`.
+
+Each entry may set `healthPath` (default `/health`). Next.js frontends in this ecosystem serve `/api/health`, **not** `/health` — omitting `healthPath` for a frontend silently produces a permanent 404 in the digest. `checkServiceHealth` classifies a 404/405 on the health path as `configError` rather than a real outage, and `ServicesService.onModuleInit` logs any such services at startup.
