@@ -4,7 +4,7 @@
 #
 # monitoring-microservice's script deploys an entire observability stack
 # (Prometheus/Alertmanager/Blackbox-exporter/Node-exporter/kube-state-metrics
-# /Loki/Grafana), not just the app itself -- those manifest trees are
+# /Grafana), not just the app itself -- those manifest trees are
 # infra-specific and modeled as a preflight hook rather than forced into the
 # per-service MANIFESTS model. Only the actual monitoring-microservice
 # api+web app is modeled generically.
@@ -33,7 +33,7 @@ _apply_manifest_tree() {
 }
 
 deploy_preflight() {
-  for stack in prometheus alertmanager blackbox-exporter node-exporter kube-state-metrics loki grafana; do
+  for stack in prometheus alertmanager blackbox-exporter node-exporter kube-state-metrics grafana; do
     _apply_manifest_tree "$PROJECT_ROOT/k8s/$stack"
   done
 }

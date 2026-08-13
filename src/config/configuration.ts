@@ -19,7 +19,6 @@ export default () => ({
   notifications: { url: process.env.NOTIFICATION_SERVICE_URL || 'http://notifications-microservice:3368' },
   prometheus: { url: process.env.PROMETHEUS_URL || 'http://prometheus:9090' },
   grafana: { url: process.env.GRAFANA_URL || 'http://grafana:3000' },
-  loki: { url: process.env.LOKI_URL || 'http://loki:3100' },
   alertmanager: { url: process.env.ALERTMANAGER_URL || 'http://alertmanager:9093' },
   jwtSecret: process.env.JWT_SECRET || '',
   digest: {

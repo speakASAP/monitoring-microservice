@@ -44,7 +44,7 @@ Query the RAG service first — saves 2000-5000 tokens per query:
 
 - **API:** `src/` — NestJS, ecosystem registry, alerts, webhooks
 - **Dashboard:** `web/` — Next.js operational UI
-- **Stack:** `k8s/` — Prometheus, Grafana, Loki, Alertmanager, exporters (do not edit nginx-microservice)
+- **Stack:** `k8s/` — Prometheus, Grafana, Alertmanager, exporters (do not edit nginx-microservice)
 
 ## Key commands
 

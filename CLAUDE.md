@@ -88,7 +88,7 @@ Key env vars:
 | `PORT` | 3395 | Backend listen port |
 | `DB_HOST` / `DB_PORT` / `DB_USER` / `DB_PASSWORD` / `DB_NAME` | `db-server-postgres:5432` | Postgres |
 | `NOTIFICATION_SERVICE_URL` | `http://notifications-microservice:3368` | Alert forwarding |
-| `PROMETHEUS_URL` / `GRAFANA_URL` / `LOKI_URL` / `ALERTMANAGER_URL` | internal cluster URLs | Observability stack |
+| `PROMETHEUS_URL` / `GRAFANA_URL` / `ALERTMANAGER_URL` | internal cluster URLs | Observability stack |
 
 ### Observability stack (K8s manifests in `k8s/`)
 
@@ -97,7 +97,6 @@ Deployed alongside the microservice in `statex-apps` namespace:
 - **Prometheus** — scrape config in `k8s/prometheus/configmap-config.yaml`, alert rules in `k8s/prometheus/configmap-rules.yaml`
 - **Alertmanager** — routes alerts to the webhook endpoint of this service
 - **Grafana** — datasources in `k8s/grafana/configmap-datasources.yaml`, dashboards in `k8s/grafana/configmap-dashboards.yaml`
-- **Loki** — log aggregation
 - **node-exporter** — DaemonSet for host metrics
 
 ### Ecosystem service registry

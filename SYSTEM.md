@@ -20,7 +20,7 @@
 ### What deploy.sh does
 
 1. Builds and pushes API + web Docker images
-2. Applies all manifests under `k8s/` (Prometheus, Grafana, Loki, Alertmanager, blackbox, node-exporter, kube-state-metrics, API, web, ingress)
+2. Applies all manifests under `k8s/` (Prometheus, Grafana, Alertmanager, blackbox, node-exporter, kube-state-metrics, API, web, ingress)
 3. **Reloads Prometheus config** via `POST /-/reload` (never `rollout restart` Prometheus — single PVC causes lock crash)
 4. Rolls out `monitoring-microservice` and `monitoring-web`
 5. Verifies `/health` and that `/api/services/list` returns 50+ entries
@@ -50,7 +50,6 @@ Do **not** use `kubectl rollout restart deployment/prometheus` — RWO volume lo
 |-----------|---------|------|
 | Prometheus | prometheus | 9090 |
 | Grafana | grafana | 3000 |
-| Loki | loki | 3100 |
 | Alertmanager | alertmanager | 9093 |
 | Blackbox exporter | blackbox-exporter | 9115 |
 | Node exporter | node-exporter | 9100 |

@@ -18,6 +18,18 @@ spec:
       securityContext:
         fsGroup: 472
         runAsUser: 472
+      initContainers:
+        # The dashboard file-provider (configmap-dashboards.yaml) points at
+        # /var/lib/grafana/dashboards. That path lives on the grafana-data PVC and is not
+        # created by the image, so without this the provisioner logged
+        # "Cannot read directory ... no such file or directory" on every scan (~1100/24h)
+        # and no dashboard could ever load.
+        - name: init-dashboards-dir
+          image: grafana/grafana:10.4.2
+          command: ['sh', '-c', 'mkdir -p /var/lib/grafana/dashboards']
+          volumeMounts:
+            - name: grafana-data
+              mountPath: /var/lib/grafana
       containers:
         - name: grafana
           image: grafana/grafana:10.4.2

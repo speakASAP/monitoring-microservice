@@ -19,7 +19,6 @@ data:
   NOTIFICATION_SERVICE_URL: "http://notifications-microservice.statex-apps.svc.cluster.local:3368"
   PROMETHEUS_URL: "http://prometheus.statex-apps.svc.cluster.local:9090"
   GRAFANA_URL: "http://grafana.statex-apps.svc.cluster.local:3000"
-  LOKI_URL: "http://loki.statex-apps.svc.cluster.local:3100"
   ALERTMANAGER_URL: "http://alertmanager.statex-apps.svc.cluster.local:9093"
   DAILY_DIGEST_ENABLED: "true"
   DAILY_DIGEST_CRON: "0 8 * * *"
