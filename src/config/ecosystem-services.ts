@@ -61,7 +61,6 @@ export const ECOSYSTEM_SERVICES: EcosystemServiceDefinition[] = [
   { name: 'school-committee', port: 4800, domain: 'strilkove.cz', category: 'application', kind: 'service' },
   { name: 'candidate-blueprism', port: 4850, domain: 'candidate-blueprism.alfares.cz', category: 'application', kind: 'service', healthPath: '/' },
   { name: 'domain-research', port: 4860, domain: 'domain-research.alfares.cz', category: 'application', kind: 'service' },
-  { name: 'ecosystem-console', port: 3000, domain: 'ecosystem-console.alfares.cz', category: 'application', kind: 'service', healthPath: '/api/health' },
   { name: 'statex', port: 3000, domain: 'alfares.cz', category: 'application', kind: 'service', healthPath: '/api/health' },
   { name: 'speakasap', port: 3000, domain: 'speakasap.alfares.cz', category: 'application', kind: 'service' },
   { name: 'speakasap-portal', port: 0, domain: 'speakasap-portal', category: 'application', kind: 'repository' },
