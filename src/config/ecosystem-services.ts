@@ -62,7 +62,12 @@ export const ECOSYSTEM_SERVICES: EcosystemServiceDefinition[] = [
   { name: 'marathon', port: 3000, domain: 'marathon.alfares.cz', category: 'application', kind: 'service' },
   { name: 'sgiprealestate', port: 4300, domain: 'sgiprealestate.alfares.cz', category: 'application', kind: 'repository' },
   { name: 'shop-assistant', port: 4500, domain: 'shop-assistant.alfares.cz', category: 'application', kind: 'service' },
-  { name: 'school-committee', port: 4800, domain: 'strilkove.cz', category: 'application', kind: 'service' },
+  // /health and /healthz are ordinary Next.js PAGE routes here and redirect to
+  // /login -- they were never health endpoints. The real ones are public and
+  // unauthenticated: /api/health/live (process up) and /api/health/ready, which
+  // also checks AUTH_SERVICE_BASE_URL, DB_HOST and LOGGING_SERVICE_URL. Using
+  // 'ready' for the deeper signal; nothing restarts on this, it feeds the digest.
+  { name: 'school-committee', port: 4800, domain: 'strilkove.cz', category: 'application', kind: 'service', healthPath: '/api/health/ready' },
   { name: 'candidate-blueprism', port: 4850, domain: 'candidate-blueprism.alfares.cz', category: 'application', kind: 'service', healthPath: '/' },
   { name: 'domain-research', port: 4860, domain: 'domain-research.alfares.cz', category: 'application', kind: 'service' },
   { name: 'statex', port: 3000, domain: 'alfares.cz', category: 'application', kind: 'service', healthPath: '/api/health' },
