@@ -18,7 +18,11 @@ export const ECOSYSTEM_SERVICES: EcosystemServiceDefinition[] = [
   { name: 'notifications-microservice', port: 3368, domain: 'notifications.alfares.cz', category: 'infrastructure', kind: 'service' },
   { name: 'ai-microservice', port: 3380, domain: 'ai.alfares.cz', category: 'infrastructure', kind: 'service' },
   { name: 'minio-microservice', port: 9000, domain: 'minio.alfares.cz', category: 'infrastructure', kind: 'service', healthPath: '/minio/health/live' },
-  { name: 'database-server-frontend', port: 3390, domain: 'database-server.alfares.cz', category: 'infrastructure', kind: 'service' },
+  // /health is a shallow liveness handler that returns 200 whenever the web
+  // process is up; /api/health is the real check (Postgres + Redis). Probing
+  // the default hid a 3-day Postgres outage after the 2026-08-14 dbadmin
+  // rotation -- 503 with postgres.healthy=false, reported green throughout.
+  { name: 'database-server-frontend', port: 3390, domain: 'database-server.alfares.cz', category: 'infrastructure', kind: 'service', healthPath: '/api/health' },
   { name: 'vault-microservice', port: 8200, domain: 'vault.alfares.cz', category: 'infrastructure', kind: 'service', healthPath: '/v1/sys/health', monitorable: false },
   { name: 'monitoring-microservice', port: 3395, domain: 'monitoring.alfares.cz', category: 'infrastructure', kind: 'service' },
   { name: 'monitoring-web', port: 3396, domain: 'monitoring.alfares.cz', category: 'infrastructure', kind: 'service', healthPath: '/' },

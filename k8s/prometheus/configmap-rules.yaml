@@ -55,6 +55,41 @@ data:
               summary: "High CPU usage"
               description: "CPU above 80% for 10 minutes"
 
+      - name: external-secrets
+        rules:
+          # An ExternalSecret stuck NotReady means the K8s Secret is stale: the
+          # consuming pod keeps running on the last-synced values, so nothing
+          # crashes and nothing else surfaces this. Sole detector of that state.
+          - alert: ExternalSecretSyncFailing
+            expr: externalsecret_status_condition{condition="Ready",status="False"} == 1
+            for: 15m
+            labels:
+              severity: critical
+            annotations:
+              summary: "ExternalSecret {{ $labels.namespace }}/{{ $labels.name }} not syncing"
+              description: "ExternalSecret {{ $labels.namespace }}/{{ $labels.name }} has been Ready=False for 15 minutes. The K8s Secret is stale — consumers still run on the last successfully synced values. Check ESO logs: kubectl -n external-secrets logs deployment/external-secrets"
+
+          # Catches a store-wide outage (Vault sealed/unreachable), which would
+          # otherwise fire one alert per ExternalSecret.
+          - alert: ClusterSecretStoreNotReady
+            expr: clustersecretstore_status_condition{condition="Ready",status="False"} == 1
+            for: 10m
+            labels:
+              severity: critical
+            annotations:
+              summary: "ClusterSecretStore {{ $labels.name }} not ready"
+              description: "ClusterSecretStore {{ $labels.name }} has been Ready=False for 10 minutes. Every ExternalSecret bound to it is failing to sync — usually Vault sealed or unreachable."
+
+          # ESO scrape gone means sync failures stop being observable at all.
+          - alert: ExternalSecretsOperatorDown
+            expr: up{job="external-secrets"} == 0
+            for: 10m
+            labels:
+              severity: critical
+            annotations:
+              summary: "external-secrets operator metrics unreachable"
+              description: "Prometheus cannot scrape the external-secrets controller for 10 minutes. ExternalSecret sync failures are undetectable while this is firing."
+
       - name: kubernetes
         rules:
           - alert: PodCrashLooping

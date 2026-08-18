@@ -30,6 +30,29 @@ data:
         static_configs:
           - targets: ['kube-state-metrics:8080']
 
+      # ESO controller metrics. Discovered by pod role: the Helm chart ships no
+      # metrics Service, and the pod IP changes on every controller restart.
+      - job_name: 'external-secrets'
+        kubernetes_sd_configs:
+          - role: pod
+            namespaces:
+              names: ['external-secrets']
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_pod_label_app_kubernetes_io_name]
+            action: keep
+            regex: external-secrets
+          - source_labels: [__meta_kubernetes_pod_container_port_name]
+            action: keep
+            regex: metrics
+          # Deliberately NOT setting `namespace`/`pod` here. ESO's metrics carry
+          # their own `namespace`/`name` labels identifying the ExternalSecret;
+          # target labels of the same name would collide and Prometheus would
+          # rename the real ones to `exported_namespace`, making alert
+          # annotations point at the operator's namespace instead of the failing
+          # ExternalSecret's. Use `eso_pod` for the scrape source instead.
+          - source_labels: [__meta_kubernetes_pod_name]
+            target_label: eso_pod
+
       - job_name: 'blackbox-http'
         metrics_path: /probe
         params:

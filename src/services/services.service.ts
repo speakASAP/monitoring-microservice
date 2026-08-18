@@ -66,7 +66,14 @@ export class ServicesService implements OnModuleInit {
     const start = Date.now();
     const healthPath = svc.healthPath || '/health';
     try {
-      await axios.get(`${internalUrl}${healthPath}`, { timeout: 5000 });
+      // maxRedirects: 0 is load-bearing. A 3xx on a health path is never a
+      // healthy answer -- it means something intercepted the probe. Following
+      // it silently turns a broken service green: school-committee's auth
+      // middleware redirects /health -> /login, and axios (which follows
+      // redirects by default) resolved 200 from the LOGIN PAGE, so the service
+      // would report healthy with its database down or its backend gone.
+      // Throwing on 3xx routes it into the classifier below as 'unhealthy'.
+      await axios.get(`${internalUrl}${healthPath}`, { timeout: 5000, maxRedirects: 0 });
       return { healthy: true, responseTimeMs: Date.now() - start };
     } catch (err: any) {
       // A 404/405 means something IS listening and rejected the path -- the
@@ -84,9 +91,12 @@ export class ServicesService implements OnModuleInit {
       return {
         healthy: false,
         responseTimeMs: Date.now() - start,
-        error: failureKind === 'config'
-          ? `${err.message} — healthPath '${healthPath}' not found; check the registry entry, not the service`
-          : err.message,
+        error:
+          failureKind === 'config'
+            ? `${err.message} — healthPath '${healthPath}' not found; check the registry entry, not the service`
+            : status >= 300 && status < 400
+              ? `${err.message} — healthPath '${healthPath}' redirected to '${err.response?.headers?.location ?? 'unknown'}'; the probe was intercepted (auth middleware?) and never reached a health handler`
+              : err.message,
         failureKind,
       };
     }
