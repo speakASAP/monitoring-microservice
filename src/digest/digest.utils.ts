@@ -1,5 +1,27 @@
 import { SnapshotServiceEntry } from './service-health-snapshot.entity';
 
+/**
+ * Escape values interpolated into the digest's HTML.
+ *
+ * The digest is sent with parse_mode=HTML for its <b> tags, and service names
+ * and error strings come from the monitored services themselves. An error
+ * containing '<' used to make Telegram reject the entire digest with
+ * 400 "can't parse entities", so the whole message was lost -- this happened on
+ * 2026-08-18. notifications-microservice now retries such a message as plain
+ * text so it can no longer vanish, but the digest would arrive with its markup
+ * visible as literal tags. Escaping the untrusted values keeps the formatting
+ * intact.
+ *
+ * '&' must be replaced first, or the '&' of an entity emitted by a later
+ * replacement would itself be escaped.
+ */
+export function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
 export interface DigestDiff {
   newlyFailing: SnapshotServiceEntry[];
   recovered: SnapshotServiceEntry[];
@@ -57,13 +79,15 @@ export function formatDigestMessage(
       if (diff.newlyFailing.length > 0) {
         lines.push(`<b>⬇️ Newly failing (${diff.newlyFailing.length}):</b>`);
         for (const s of diff.newlyFailing) {
-          lines.push(`<b>• ${s.name}${s.error ? ` — ${s.error}` : ''}</b>`);
+          lines.push(
+            `<b>• ${escapeHtml(s.name)}${s.error ? ` — ${escapeHtml(s.error)}` : ''}</b>`,
+          );
         }
       }
       if (diff.recovered.length > 0) {
         lines.push(`<b>✅ Recovered (${diff.recovered.length}):</b>`);
         for (const s of diff.recovered) {
-          lines.push(`<b>• ${s.name}</b>`);
+          lines.push(`<b>• ${escapeHtml(s.name)}</b>`);
         }
       }
     }
@@ -74,7 +98,7 @@ export function formatDigestMessage(
     lines.push('━━━━━━━━━━━━━━━━━━━━');
     lines.push(`🔴 Still failing (${currentlyFailing.length}):`);
     for (const s of currentlyFailing) {
-      lines.push(`• ${s.name}${s.error ? ` — ${s.error}` : ''}`);
+      lines.push(`• ${escapeHtml(s.name)}${s.error ? ` — ${escapeHtml(s.error)}` : ''}`);
     }
   } else {
     lines.push('');

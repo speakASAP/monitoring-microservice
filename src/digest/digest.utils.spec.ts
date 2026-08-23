@@ -1,4 +1,4 @@
-import { computeDiff, formatDigestMessage } from './digest.utils';
+import { computeDiff, escapeHtml, formatDigestMessage } from './digest.utils';
 import { SnapshotServiceEntry } from './service-health-snapshot.entity';
 
 const healthy = (name: string): SnapshotServiceEntry => ({ name, healthy: true, responseTimeMs: 50 });
@@ -87,5 +87,38 @@ describe('formatDigestMessage', () => {
     const msg = formatDigestMessage(today, diff, dateKey);
     expect(msg).toContain('• catalog — timeout');
     expect(msg).toContain('• payments — ECONNREFUSED');
+  });
+});
+
+describe('HTML escaping of untrusted service values', () => {
+  const entry = (over: Record<string, unknown> = {}) =>
+    ({ name: 'svc', healthy: false, error: undefined, ...over }) as any;
+
+  it('escapes & before < and > so entities are not double-escaped', () => {
+    expect(escapeHtml('A & B <tag> C')).toBe('A &amp; B &lt;tag&gt; C');
+  });
+
+  it('escapes error text so a stray tag cannot break the digest markup', () => {
+    // Telegram rejected the whole digest on 2026-08-18 for exactly this shape.
+    const today = [entry({ name: 'speakasap', error: 'no <deployment> found' })];
+    const msg = formatDigestMessage(today, computeDiff(today, []), '2026-08-23');
+
+    expect(msg).toContain('no &lt;deployment&gt; found');
+    expect(msg).not.toContain('no <deployment> found');
+  });
+
+  it('escapes service names too', () => {
+    const today = [entry({ name: 'weird<name>' })];
+    const msg = formatDigestMessage(today, computeDiff(today, []), '2026-08-23');
+
+    expect(msg).toContain('weird&lt;name&gt;');
+    expect(msg).not.toContain('weird<name>');
+  });
+
+  it('leaves the digest\'s own markup intact', () => {
+    const today = [entry({ name: 'svc' })];
+    const msg = formatDigestMessage(today, computeDiff(today, []), '2026-08-23');
+
+    expect(msg).toContain('<b>Monitoring Daily Digest</b>');
   });
 });
