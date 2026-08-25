@@ -55,4 +55,26 @@ export class AuthConsumerService {
     const allowed = this.getAdminRoles();
     return allowed.some((role) => user.roles.includes(role));
   }
+
+  /**
+   * Roles allowed on operator surfaces (customer-integration management).
+   * Admins always qualify; `MONITORING_OPERATOR_ROLES` may widen it.
+   *
+   * Authentication alone is not authorization: MonitoringAuthGuard previously
+   * admitted any token Auth considered valid, so any principal in the ecosystem
+   * could rotate or delete customer integration keys.
+   */
+  getOperatorRoles(): string[] {
+    const configured = this.config.get<string>('monitoring.operatorRoles') || '';
+    const extra = configured
+      .split(',')
+      .map((role) => role.trim())
+      .filter(Boolean);
+    return [...this.getAdminRoles(), ...extra];
+  }
+
+  isMonitoringOperator(user: MonitoringAuthUser): boolean {
+    const allowed = this.getOperatorRoles();
+    return allowed.some((role) => user.roles.includes(role));
+  }
 }

@@ -9,8 +9,15 @@ export class MarathonMonitoringService {
   async getEventSummary(windowMinutes = 60, limit = 25) {
     const loggingUrl = (this.config.get<string>('logging.url') || 'http://logging-microservice:3367').replace(/\/$/, '');
     try {
+      const token = this.config.get<string>('logging.readToken') || process.env.LOGGING_READ_SERVICE_TOKEN;
+      if (!token) {
+        throw new Error(
+          'LOGGING_READ_SERVICE_TOKEN is not configured; the logging summary endpoint requires an authenticated service principal',
+        );
+      }
       const response = await axios.get(`${loggingUrl}/api/logs/marathon-events/summary`, {
         params: { windowMinutes, limit },
+        headers: { Authorization: `Bearer ${token}` },
         timeout: 5000,
       });
       return response.data?.data || response.data;

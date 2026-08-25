@@ -14,6 +14,9 @@ export default () => ({
     adminRoles:
       process.env.MONITORING_ADMIN_ROLES ||
       'global:superadmin,global:platform_admin,app:monitoring-microservice:admin,internal:monitoring-microservice:admin,monitoring:admin,app:monitoring:admin',
+    operatorRoles:
+      process.env.MONITORING_OPERATOR_ROLES ||
+      'internal:monitoring-microservice:operator,app:monitoring-microservice:operator',
   },
   logging: { url: process.env.LOGGING_SERVICE_URL || 'http://logging-microservice:3367' },
   notifications: { url: process.env.NOTIFICATION_SERVICE_URL || 'http://notifications-microservice:3368' },
