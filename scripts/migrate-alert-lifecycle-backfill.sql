@@ -38,3 +38,24 @@ UPDATE monitoring.alerts
 -- Verify with:
 --   SELECT status, count(*) FROM monitoring.alerts GROUP BY status;
 -- Expected after: active = only rows the NEW code opened (0 immediately after).
+
+-- ---------------------------------------------------------------------------
+-- Second pass, added 2026-08-27.
+--
+-- A node-wide I/O storm on 2026-08-26 18:19–18:41 opened 238 alerts while the
+-- OLD code was still serving (the lifecycle deploy was mid-rollout, and the
+-- rollout itself was what the storm blocked). That code never persisted a
+-- fingerprint, so those rows are 'active' with fingerprint IS NULL.
+--
+-- HealthWatcher.expireStaleAlerts deliberately only expires alerts WITH a
+-- fingerprint — those are the ones Alertmanager owns and would have re-fired,
+-- so absence of a re-fire is meaningful. For a NULL-fingerprint row it is not:
+-- nothing can ever re-fire or resolve it. They can only be closed here.
+--
+-- Same statement as the first pass, so re-running the whole file is safe and
+-- idempotent: anything the new code opens carries a fingerprint and is skipped.
+UPDATE monitoring.alerts
+   SET status       = 'resolved',
+       "resolvedAt" = COALESCE("lastFiredAt", "firedAt")
+ WHERE status = 'active'
+   AND "fingerprint" IS NULL;
