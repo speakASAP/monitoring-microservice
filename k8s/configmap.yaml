@@ -23,3 +23,8 @@ data:
   DAILY_DIGEST_ENABLED: "true"
   DAILY_DIGEST_CRON: "0 8 * * *"
   TELEGRAM_CHAT_ID: "694579866"
+  # Periodic health sweep that drives alert fire/resolve. Before this, the only
+  # recurring health signal was the 08:00 digest, so an 08:30 outage went
+  # unreported for 23.5 hours.
+  HEALTH_WATCH_ENABLED: "true"
+  HEALTH_WATCH_CRON: "*/5 * * * *"

@@ -22,8 +22,10 @@ export class NotificationsClient {
 
   async sendTelegram(message: string): Promise<void> {
     if (!this.telegramChatId) {
-      this.logger.warn('[NotificationsClient] TELEGRAM_CHAT_ID not set — skipping send');
-      return;
+      // Never return quietly here: a missing chat id means the alerting channel
+      // is dead, and the whole point of this client is that failures get seen.
+      this.logger.error('[NotificationsClient] TELEGRAM_CHAT_ID not set — cannot deliver');
+      throw new Error('TELEGRAM_CHAT_ID is not configured — Telegram delivery is unavailable');
     }
     await this.http.post('/notifications/send', {
       channel: 'telegram',

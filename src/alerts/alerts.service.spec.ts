@@ -1,0 +1,121 @@
+import { AlertsService } from './alerts.service';
+import { Alert } from './alerts.entity';
+
+/**
+ * Transition tests for stateful alerting (fire -> repeat -> resolve).
+ *
+ * The incident these exist to prevent, measured in production 2026-08-26:
+ * monitoring.alerts held 326,745 rows, every one of them status='active' and
+ * not a single 'resolved'. Two independent bugs combined:
+ *
+ *   1. webhooks.service.ts received Alertmanager's resolve events (the config
+ *      has had send_resolved: true since 2026-05-30) and only wrote a log line,
+ *      so nothing was ever closed.
+ *   2. AlertsService.create() unconditionally INSERTed, and Alertmanager
+ *      re-POSTs every repeat_interval (4h), so one long-running problem grew a
+ *      new row every 4 hours -- 324,835 of them for a single alertname/service.
+ *
+ * The result: the alert table could not answer "what is broken right now",
+ * which is the entire question it exists to answer.
+ */
+describe('AlertsService lifecycle', () => {
+  let service: AlertsService;
+  let rows: Alert[];
+
+  // Minimal in-memory stand-in for the repository. Deliberately enforces the
+  // partial unique index from migrate-alert-lifecycle.sql, because a fake that
+  // permits duplicate active fingerprints would let bug #2 pass these tests.
+  const repo = {
+    find: jest.fn(async ({ where }: any) => rows.filter((r) => r.status === where.status)),
+    findOne: jest.fn(async ({ where }: any) =>
+      rows.find((r) =>
+        Object.entries(where).every(([k, v]) => (r as any)[k] === v),
+      ) ?? null,
+    ),
+    create: jest.fn((dto: any) => dto as Alert),
+    save: jest.fn(async (a: Alert) => {
+      if (
+        a.status === 'active' &&
+        a.fingerprint &&
+        rows.some((r) => r !== a && r.status === 'active' && r.fingerprint === a.fingerprint)
+      ) {
+        throw new Error('duplicate key value violates unique constraint "uq_alerts_active_fingerprint"');
+      }
+      if (!rows.includes(a)) rows.push(a);
+      return a;
+    }),
+  };
+
+  const fireDto = (over: Partial<Alert> = {}) => ({
+    alertname: 'PodNotReady',
+    service: 'kube-state-metrics',
+    severity: 'warning',
+    message: 'Pod statex-apps/cliplot-abc not ready for 5 minutes',
+    fingerprint: 'fp-001',
+    ...over,
+  });
+
+  beforeEach(() => {
+    rows = [];
+    jest.clearAllMocks();
+    service = new AlertsService(repo as any);
+  });
+
+  it('first fire creates an active alert and reports the transition as fired', async () => {
+    const res = await service.fire(fireDto());
+
+    expect(res.transition).toBe('fired');
+    expect(res.alert.status).toBe('active');
+    expect(res.alert.occurrenceCount).toBe(1);
+    expect(rows).toHaveLength(1);
+  });
+
+  it('re-fire updates the existing row instead of inserting a duplicate', async () => {
+    await service.fire(fireDto());
+    const res = await service.fire(fireDto({ message: 'still not ready' }));
+
+    // This is bug #2: without the upsert this is 2 rows and 324k by August.
+    expect(rows).toHaveLength(1);
+    expect(res.transition).toBe('repeat');
+    expect(res.alert.occurrenceCount).toBe(2);
+    expect(res.alert.message).toBe('still not ready');
+  });
+
+  it('resolving an active alert closes it and reports the transition as resolved', async () => {
+    await service.fire(fireDto());
+    const res = await service.resolveByFingerprint('fp-001');
+
+    expect(res.transition).toBe('resolved');
+    expect(res.alert!.status).toBe('resolved');
+    expect(res.alert!.resolvedAt).toBeInstanceOf(Date);
+  });
+
+  it('resolving something that was never firing is a no-op, not an error', async () => {
+    // Alertmanager re-sends resolves; a resolve for an alert we never recorded
+    // must not fabricate a recovery notification for a service that was fine.
+    const res = await service.resolveByFingerprint('fp-never-seen');
+
+    expect(res.transition).toBe('noop');
+    expect(res.alert).toBeNull();
+  });
+
+  it('re-firing after a resolve opens a NEW alert rather than reviving the old row', async () => {
+    await service.fire(fireDto());
+    await service.resolveByFingerprint('fp-001');
+    const res = await service.fire(fireDto());
+
+    expect(res.transition).toBe('fired');
+    expect(res.alert.occurrenceCount).toBe(1);
+    expect(rows.filter((r) => r.status === 'resolved')).toHaveLength(1);
+    expect(rows.filter((r) => r.status === 'active')).toHaveLength(1);
+  });
+
+  it('distinct fingerprints are distinct alerts even under one alertname', async () => {
+    // The `service` column is the scraper (kube-state-metrics), so two broken
+    // pods share alertname AND service. Collapsing them would hide an outage.
+    await service.fire(fireDto({ fingerprint: 'fp-001' }));
+    await service.fire(fireDto({ fingerprint: 'fp-002' }));
+
+    expect(rows.filter((r) => r.status === 'active')).toHaveLength(2);
+  });
+});
