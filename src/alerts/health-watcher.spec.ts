@@ -24,6 +24,7 @@ describe('HealthWatcher', () => {
       fire: jest.fn(async (_dto: any): Promise<any> => ({ transition: 'fired', alert: { id: 'a', service: 'x', occurrenceCount: 1 } })),
       resolveByFingerprint: jest.fn(async (_fp: string): Promise<any> => ({ transition: 'noop', alert: null })),
       findActive: jest.fn(async (): Promise<any[]> => []),
+      findStale: jest.fn(async (): Promise<any[]> => []),
     };
     const notifications = { sendTelegram: jest.fn(async () => undefined) };
     const services = { getServicesStatus: jest.fn(async (): Promise<any[]> => []) };
@@ -95,6 +96,38 @@ describe('HealthWatcher', () => {
     await watcher.runCheck();
 
     expect(alerts.fire).not.toHaveBeenCalled();
+  });
+
+  it('expires alerts that have gone stale — nothing re-fired them', async () => {
+    // 2026-08-26: an I/O storm opened 238 alerts. Alertmanager sent resolves
+    // for them while monitoring was down, so they could never be closed and sat
+    // 'active' forever, poisoning the digest on every later message.
+    // Alertmanager re-fires anything still true every repeat_interval (4h), so
+    // an alert nobody has re-fired in far longer than that is over.
+    const { watcher, alerts, services } = build();
+    services.getServicesStatus.mockResolvedValue([] as any);
+    const stale = { id: 's1', service: 'gone', alertname: 'PodNotReady', fingerprint: 'fp-stale' };
+    alerts.findStale = jest.fn(async (): Promise<any[]> => [stale]);
+    alerts.resolveByFingerprint.mockResolvedValue({ transition: 'resolved', alert: stale } as any);
+
+    await watcher.runCheck();
+
+    expect(alerts.findStale).toHaveBeenCalled();
+    expect(alerts.resolveByFingerprint).toHaveBeenCalledWith('fp-stale');
+  });
+
+  it('expiring a stale alert is silent — it is bookkeeping, not a recovery', async () => {
+    // Announcing "✅ RESOLVED" for 236 alerts at once would be a notification
+    // storm about pods that vanished hours ago.
+    const { watcher, alerts, notifications, services } = build();
+    services.getServicesStatus.mockResolvedValue([] as any);
+    const stale = { id: 's1', service: 'gone', alertname: 'PodNotReady', fingerprint: 'fp-stale' };
+    alerts.findStale = jest.fn(async (): Promise<any[]> => [stale]);
+    alerts.resolveByFingerprint.mockResolvedValue({ transition: 'resolved', alert: stale } as any);
+
+    await watcher.runCheck();
+
+    expect(notifications.sendTelegram).not.toHaveBeenCalled();
   });
 
   it('one failing service does not stop the rest from being processed', async () => {

@@ -9,6 +9,13 @@ import { LoggingService } from '../common/logging/logging.service';
 const HEALTH_WATCH_CRON = process.env.HEALTH_WATCH_CRON || '*/5 * * * *';
 
 /**
+ * An active alert with no re-fire in this long is treated as over.
+ * Alertmanager's repeat_interval is 4h, so this is comfortably past it — high
+ * enough that a genuinely-still-firing alert is never expired early.
+ */
+const STALE_ALERT_MINUTES = Number(process.env.STALE_ALERT_MINUTES || 360);
+
+/**
  * Periodically checks every registered service and drives the alert lifecycle
  * from the result: a service that goes down fires once, and a service that
  * comes back sends the clear event.
@@ -40,6 +47,8 @@ export class HealthWatcher {
   }
 
   async runCheck(): Promise<void> {
+    await this.expireStaleAlerts();
+
     const statuses = await this.services.getServicesStatus();
 
     for (const svc of statuses) {
@@ -73,6 +82,39 @@ export class HealthWatcher {
 
   private fingerprintFor(name: string): string {
     return `health:${name}`;
+  }
+
+  /**
+   * Close alerts nothing has re-fired for far longer than Alertmanager's
+   * repeat_interval — their resolve was missed, almost always because this
+   * service was down when it arrived.
+   *
+   * Silent by design. These are not recoveries anyone is waiting to hear about;
+   * they are bookkeeping about pods that vanished hours ago, and announcing 236
+   * of them at once would be a notification storm. The correction shows up
+   * where it matters: the digest stops naming them.
+   */
+  private async expireStaleAlerts(): Promise<void> {
+    const stale = await this.alerts.findStale(STALE_ALERT_MINUTES);
+    if (stale.length === 0) return;
+
+    let expired = 0;
+    for (const alert of stale) {
+      if (!alert.fingerprint) continue;
+      try {
+        const { transition } = await this.alerts.resolveByFingerprint(alert.fingerprint);
+        if (transition === 'resolved') expired += 1;
+      } catch (err: any) {
+        this.logger.error(
+          `[HealthWatcher] expiring stale alert ${alert.fingerprint} failed: ${err?.message ?? String(err)}`,
+        );
+      }
+    }
+
+    if (expired > 0) {
+      this.logger.log(`[HealthWatcher] expired ${expired} stale alert(s) — no re-fire in ${STALE_ALERT_MINUTES}m`);
+      await this.logging.log('info', 'stale_alerts_expired', { count: expired, thresholdMinutes: STALE_ALERT_MINUTES });
+    }
   }
 
   private async handleUnhealthy(svc: any): Promise<void> {

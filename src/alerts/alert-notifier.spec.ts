@@ -77,6 +77,21 @@ describe('AlertNotifier', () => {
     expect(msg).not.toContain('All clear');
   });
 
+  it('caps the digest so a mass outage cannot produce an unreadable message', () => {
+    // 2026-08-26: an I/O storm opened 238 alerts at once. An uncapped digest
+    // appends 238 lines to EVERY subsequent message, which is worse than no
+    // digest -- nobody reads it, and Telegram splits it across messages.
+    const many = Array.from({ length: 40 }, (_, i) => alert({ service: `svc-${i}`, fingerprint: `fp-${i}` }));
+    const msg = notifier.buildActiveDigest(many, at);
+
+    const lines = msg.split('\n');
+    expect(lines.length).toBeLessThanOrEqual(14);
+    // The true total must still be stated, or the message understates the outage.
+    expect(msg).toContain('Still failing (40)');
+    // 12 named + 28 hidden = the true 40 in the heading.
+    expect(msg).toContain('and 28 more');
+  });
+
   it('durations read in human units, not raw milliseconds', () => {
     expect(notifier.formatDuration(45_000)).toBe('45s');
     expect(notifier.formatDuration(11_520_000)).toBe('3h12m');

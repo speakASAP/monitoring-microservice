@@ -108,6 +108,30 @@ export class AlertsService {
   }
 
   /**
+   * Active alerts that nothing has re-fired in `olderThanMinutes`.
+   *
+   * Alertmanager re-POSTs anything still true every repeat_interval (4h), so an
+   * alert well past that is over — its resolve was simply missed, usually
+   * because monitoring itself was down when it arrived. On 2026-08-26 an I/O
+   * storm opened 238 alerts whose resolves landed while this service was
+   * restarting; with no expiry they would have sat 'active' forever and
+   * appeared in the digest of every later message.
+   *
+   * Deliberately scoped to alerts WITH a fingerprint: those are the ones
+   * Alertmanager owns and would have re-fired. Alerts from other sources are
+   * left to their own resolve path.
+   */
+  async findStale(olderThanMinutes: number): Promise<Alert[]> {
+    const cutoff = new Date(Date.now() - olderThanMinutes * 60_000);
+    return this.repo
+      .createQueryBuilder('a')
+      .where('a.status = :status', { status: 'active' })
+      .andWhere('a.fingerprint IS NOT NULL')
+      .andWhere('COALESCE(a."lastFiredAt", a."firedAt") < :cutoff', { cutoff })
+      .getMany();
+  }
+
+  /**
    * Close every active alert whose `service` matches. Used by the deploy queue,
    * which knows the service it just deployed but has no Alertmanager
    * fingerprint of its own.

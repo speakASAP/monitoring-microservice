@@ -2,6 +2,12 @@ import { Injectable } from '@nestjs/common';
 import { Alert } from './alerts.entity';
 
 /**
+ * How many alerts the digest names before truncating. Chosen so the block stays
+ * readable at a glance on a phone; the heading always carries the true count.
+ */
+const DIGEST_MAX_ENTRIES = 12;
+
+/**
  * Formats fire / repeat / resolve notifications for Telegram.
  *
  * Every message ends with the active-alert digest — the list of what is still
@@ -50,14 +56,25 @@ export class AlertNotifier {
       return '── All clear — no failing services ──';
     }
 
-    const lines = active
-      .slice()
-      .sort((a, b) => this.firedAtMs(a) - this.firedAtMs(b))
-      .map((a) => {
-        const age = this.formatDuration(now.getTime() - this.firedAtMs(a));
-        const repeats = (a.occurrenceCount ?? 1) > 1 ? ` ×${a.occurrenceCount}` : '';
-        return `• ${a.service} — ${a.alertname} — ${age}${repeats}`;
-      });
+    // Oldest first: the longest-running problem is the one most likely to be
+    // the cause, and the newest are often just its knock-on effects.
+    const sorted = active.slice().sort((a, b) => this.firedAtMs(a) - this.firedAtMs(b));
+
+    const lines = sorted.slice(0, DIGEST_MAX_ENTRIES).map((a) => {
+      const age = this.formatDuration(now.getTime() - this.firedAtMs(a));
+      const repeats = (a.occurrenceCount ?? 1) > 1 ? ` ×${a.occurrenceCount}` : '';
+      return `• ${a.service} — ${a.alertname} — ${age}${repeats}`;
+    });
+
+    // A mass outage (an I/O storm opened 238 at once on 2026-08-26) would
+    // otherwise append hundreds of lines to EVERY message, which is worse than
+    // no digest: nobody reads it and Telegram splits it across messages. The
+    // count in the heading always states the true total, so truncation never
+    // understates an outage.
+    const hidden = sorted.length - lines.length;
+    if (hidden > 0) {
+      lines.push(`  …and ${hidden} more`);
+    }
 
     return [`── Still failing (${active.length}) ──`, ...lines].join('\n');
   }
