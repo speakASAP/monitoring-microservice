@@ -34,11 +34,17 @@ python3 scripts/deployment_readiness_gate.py --root .
 
 Do not put secrets, raw production data, confidential identifiers, or real customer data in prompts, examples, logs, plans, tests, screenshots, or reports.
 
-## Knowledge Retrieval (query before reading files)
-Query the RAG service first — saves 2000-5000 tokens per query:
-- URL: `http://docs-rag-microservice.statex-apps.svc.cluster.local:3397`
-- Endpoint: `POST /retrieval/agent-context` with `{"query": "...", "maxTokens": 3000}`
-- Auth: `Authorization: Bearer <JWT_TOKEN>`
+## Knowledge Retrieval
+
+Use `docs-rag-microservice` for bounded discovery when it is healthy, then
+verify deployment, security, database, integration and public-contract facts
+against the cited Git source. Git remains authoritative.
+
+Authority and fallback rules:
+`/home/ssf/Documents/Github/shared/docs/DOCUMENTATION_AUTHORITY.md`.
+
+Do not generate tokens in documentation or assume an unconfident/failed RAG
+response means that source documentation does not exist.
 
 ## Boundaries
 
