@@ -4,26 +4,6 @@
   "generated_at": "2026-08-30T21:04:11Z",
   "artifacts": [
     {
-      "id": "VISION-001",
-      "type": "vision",
-      "status": "done",
-      "title": "Monitoring platform vision",
-      "path": "docs/01_vision/VISION.md",
-      "parent_ids": [],
-      "runlayer_goal_id": null,
-      "updated_at": "2026-06-13T00:00:00Z"
-    },
-    {
-      "id": "VISION-EVOLUTION-001",
-      "type": "vision",
-      "status": "draft",
-      "title": "Monitoring vision evolution backlog",
-      "path": "docs/01_vision/VISION_EVOLUTION.md",
-      "parent_ids": ["VISION-001"],
-      "runlayer_goal_id": null,
-      "updated_at": "2026-06-13T00:00:00Z"
-    },
-    {
       "id": "ADR-001",
       "type": "decision",
       "status": "done",
@@ -31,6 +11,94 @@
       "path": "docs/07_decisions/ADR-001-use-ips-governance-baseline.md",
       "parent_ids": [],
       "updated_at": "2026-06-13T00:00:00Z"
+    },
+    {
+      "id": "CP-TASK-001",
+      "type": "context_package",
+      "status": "done",
+      "title": "IPS governance baseline context package",
+      "path": "docs/13_context_packages/CP-TASK-001-ips-governance-baseline.md",
+      "parent_ids": [
+        "TASK-001"
+      ],
+      "updated_at": "2026-06-13T00:00:00Z"
+    },
+    {
+      "id": "CP-TASK-002",
+      "type": "context_package",
+      "status": "review",
+      "title": "SaaS access and customer onboarding context package",
+      "path": "docs/13_context_packages/CP-TASK-002-saas-access-and-customer-onboarding.md",
+      "parent_ids": [
+        "TASK-002"
+      ],
+      "updated_at": "2026-07-18T17:56:09+02:00"
+    },
+    {
+      "id": "CP-TASK-003",
+      "type": "context_package",
+      "status": "review",
+      "title": "Customer integration ingest and webhook activation context package",
+      "path": "docs/13_context_packages/CP-TASK-003-customer-integration-ingest-and-webhook-activation.md",
+      "parent_ids": [
+        "TASK-003"
+      ],
+      "updated_at": "2026-07-18T17:56:09+02:00"
+    },
+    {
+      "id": "CP-TASK-004",
+      "type": "context_package",
+      "status": "review",
+      "title": "TASK-003 production deployment and smoke validation context package",
+      "path": "docs/13_context_packages/CP-TASK-004-task003-production-deployment-and-smoke-validation.md",
+      "parent_ids": [
+        "TASK-004"
+      ],
+      "updated_at": "2026-07-18T17:56:09+02:00"
+    },
+    {
+      "id": "EP-TASK-001",
+      "type": "execution_plan",
+      "status": "done",
+      "title": "Implement IPS governance baseline",
+      "path": "docs/21_execution_plans/EP-TASK-001-implement-ips-governance-baseline.md",
+      "parent_ids": [
+        "TASK-001"
+      ],
+      "updated_at": "2026-06-13T00:00:00Z"
+    },
+    {
+      "id": "EP-TASK-002",
+      "type": "execution_plan",
+      "status": "review",
+      "title": "SaaS access and customer onboarding",
+      "path": "docs/21_execution_plans/EP-TASK-002-saas-access-and-customer-onboarding.md",
+      "parent_ids": [
+        "TASK-002"
+      ],
+      "updated_at": "2026-06-13T00:00:00Z"
+    },
+    {
+      "id": "EP-TASK-003",
+      "type": "execution_plan",
+      "status": "validated",
+      "title": "Customer integration ingest and webhook activation",
+      "path": "docs/21_execution_plans/EP-TASK-003-customer-integration-ingest-and-webhook-activation.md",
+      "parent_ids": [
+        "TASK-003"
+      ],
+      "updated_at": "2026-06-15T00:00:00Z"
+    },
+    {
+      "id": "EP-TASK-004",
+      "type": "execution_plan",
+      "status": "validated",
+      "title": "TASK-003 production deployment and smoke validation",
+      "path": "docs/21_execution_plans/EP-TASK-004-task003-production-deployment-and-smoke-validation.md",
+      "parent_ids": [
+        "TASK-004"
+      ],
+      "updated_at": "2026-06-15T00:00:00Z"
     },
     {
       "id": "FEAT-001",
@@ -69,12 +137,62 @@
       "updated_at": "2026-07-18T17:56:09+02:00"
     },
     {
+      "id": "GOAL-IMPACT-TASK-001",
+      "type": "goal",
+      "status": "review",
+      "title": "Goal impact for TASK-001",
+      "path": "docs/22_goal_impact/GOAL-IMPACT-TASK-001.md",
+      "parent_ids": [
+        "TASK-001"
+      ],
+      "runlayer_goal_id": null,
+      "updated_at": "2026-06-13T00:00:00Z"
+    },
+    {
+      "id": "GOAL-IMPACT-TASK-002",
+      "type": "goal",
+      "status": "review",
+      "title": "Goal impact for TASK-002",
+      "path": "docs/22_goal_impact/GOAL-IMPACT-TASK-002.md",
+      "parent_ids": [
+        "TASK-002"
+      ],
+      "runlayer_goal_id": null,
+      "updated_at": "2026-07-18T17:56:09+02:00"
+    },
+    {
+      "id": "GOAL-IMPACT-TASK-003",
+      "type": "goal",
+      "status": "validated",
+      "title": "Goal impact for TASK-003",
+      "path": "docs/22_goal_impact/GOAL-IMPACT-TASK-003.md",
+      "parent_ids": [
+        "TASK-003"
+      ],
+      "runlayer_goal_id": null,
+      "updated_at": "2026-07-18T17:56:09+02:00"
+    },
+    {
+      "id": "GOAL-IMPACT-TASK-004",
+      "type": "goal",
+      "status": "validated",
+      "title": "Goal impact for TASK-004",
+      "path": "docs/22_goal_impact/GOAL-IMPACT-TASK-004.md",
+      "parent_ids": [
+        "TASK-004"
+      ],
+      "runlayer_goal_id": null,
+      "updated_at": "2026-07-18T17:56:09+02:00"
+    },
+    {
       "id": "MS-001",
       "type": "milestone",
       "status": "review",
       "title": "IPS governance baseline",
       "path": "docs/09_milestones/MS-001-ips-governance-baseline.md",
-      "parent_ids": ["FEAT-001"],
+      "parent_ids": [
+        "FEAT-001"
+      ],
       "updated_at": "2026-06-13T00:00:00Z"
     },
     {
@@ -83,7 +201,9 @@
       "status": "review",
       "title": "SaaS access and customer onboarding",
       "path": "docs/09_milestones/MS-002-saas-access-and-customer-onboarding.md",
-      "parent_ids": ["FEAT-002"],
+      "parent_ids": [
+        "FEAT-002"
+      ],
       "updated_at": "2026-06-13T00:00:00Z"
     },
     {
@@ -92,7 +212,9 @@
       "status": "review",
       "title": "Customer integration ingest and webhook activation",
       "path": "docs/09_milestones/MS-003-customer-integration-ingest-and-webhook-activation.md",
-      "parent_ids": ["FEAT-003"],
+      "parent_ids": [
+        "FEAT-003"
+      ],
       "updated_at": "2026-06-15T00:00:00Z"
     },
     {
@@ -101,7 +223,53 @@
       "status": "validated",
       "title": "TASK-003 production deployment and smoke validation",
       "path": "docs/09_milestones/MS-004-task003-production-deployment-and-smoke-validation.md",
-      "parent_ids": ["FEAT-004"],
+      "parent_ids": [
+        "FEAT-004"
+      ],
+      "updated_at": "2026-06-15T00:00:00Z"
+    },
+    {
+      "id": "PROMPT-TASK-001",
+      "type": "prompt",
+      "status": "done",
+      "title": "Prompt for TASK-001",
+      "path": "docs/14_prompts/PROMPT-TASK-001-ips-governance-baseline.md",
+      "parent_ids": [
+        "TASK-001"
+      ],
+      "updated_at": "2026-06-13T00:00:00Z"
+    },
+    {
+      "id": "PROMPT-TASK-002-SAAS-ACCESS-AND-CUSTOMER-ONBOARDING",
+      "type": "prompt",
+      "status": "review",
+      "title": "Prompt for TASK-002",
+      "path": "docs/14_prompts/PROMPT-TASK-002-saas-access-and-customer-onboarding.md",
+      "parent_ids": [
+        "TASK-002"
+      ],
+      "updated_at": "2026-06-13T00:00:00Z"
+    },
+    {
+      "id": "PROMPT-TASK-003-CUSTOMER-INTEGRATION-INGEST-AND-WEBHOOK-ACTIVATION",
+      "type": "prompt",
+      "status": "done",
+      "title": "Prompt for TASK-003",
+      "path": "docs/14_prompts/PROMPT-TASK-003-customer-integration-ingest-and-webhook-activation.md",
+      "parent_ids": [
+        "TASK-003"
+      ],
+      "updated_at": "2026-06-15T00:00:00Z"
+    },
+    {
+      "id": "PROMPT-TASK-004-TASK003-PRODUCTION-DEPLOYMENT-AND-SMOKE-VALIDATION",
+      "type": "prompt",
+      "status": "draft",
+      "title": "Prompt for TASK-004",
+      "path": "docs/14_prompts/PROMPT-TASK-004-task003-production-deployment-and-smoke-validation.md",
+      "parent_ids": [
+        "TASK-004"
+      ],
       "updated_at": "2026-06-15T00:00:00Z"
     },
     {
@@ -110,7 +278,10 @@
       "status": "done",
       "title": "Implement IPS governance baseline",
       "path": "docs/11_tasks/TASK-001-implement-ips-governance-baseline.md",
-      "parent_ids": ["FEAT-001", "MS-001"],
+      "parent_ids": [
+        "FEAT-001",
+        "MS-001"
+      ],
       "runlayer_task_id": null,
       "updated_at": "2026-06-13T00:00:00Z"
     },
@@ -120,7 +291,10 @@
       "status": "review",
       "title": "Implement SaaS access and customer onboarding",
       "path": "docs/11_tasks/TASK-002-implement-saas-access-and-customer-onboarding.md",
-      "parent_ids": ["FEAT-002", "MS-002"],
+      "parent_ids": [
+        "FEAT-002",
+        "MS-002"
+      ],
       "runlayer_task_id": null,
       "updated_at": "2026-06-13T00:00:00Z"
     },
@@ -130,7 +304,10 @@
       "status": "done",
       "title": "Customer integration ingest and webhook activation",
       "path": "docs/11_tasks/TASK-003-customer-integration-ingest-and-webhook-activation.md",
-      "parent_ids": ["FEAT-003", "MS-003"],
+      "parent_ids": [
+        "FEAT-003",
+        "MS-003"
+      ],
       "runlayer_task_id": null,
       "updated_at": "2026-06-15T00:00:00Z"
     },
@@ -140,7 +317,10 @@
       "status": "validated",
       "title": "TASK-003 production deployment and smoke validation",
       "path": "docs/11_tasks/TASK-004-task003-production-deployment-and-smoke-validation.md",
-      "parent_ids": ["FEAT-004", "MS-004"],
+      "parent_ids": [
+        "FEAT-004",
+        "MS-004"
+      ],
       "runlayer_task_id": null,
       "updated_at": "2026-06-15T00:00:00Z"
     },
@@ -155,190 +335,6 @@
       "updated_at": "2026-06-21T11:35:38+02:00"
     },
     {
-      "id": "EP-TASK-001",
-      "type": "execution_plan",
-      "status": "done",
-      "title": "Implement IPS governance baseline",
-      "path": "docs/21_execution_plans/EP-TASK-001-implement-ips-governance-baseline.md",
-      "parent_ids": ["TASK-001"],
-      "updated_at": "2026-06-13T00:00:00Z"
-    },
-    {
-      "id": "EP-TASK-002",
-      "type": "execution_plan",
-      "status": "review",
-      "title": "SaaS access and customer onboarding",
-      "path": "docs/21_execution_plans/EP-TASK-002-saas-access-and-customer-onboarding.md",
-      "parent_ids": ["TASK-002"],
-      "updated_at": "2026-06-13T00:00:00Z"
-    },
-    {
-      "id": "EP-TASK-003",
-      "type": "execution_plan",
-      "status": "validated",
-      "title": "Customer integration ingest and webhook activation",
-      "path": "docs/21_execution_plans/EP-TASK-003-customer-integration-ingest-and-webhook-activation.md",
-      "parent_ids": ["TASK-003"],
-      "updated_at": "2026-06-15T00:00:00Z"
-    },
-    {
-      "id": "EP-TASK-004",
-      "type": "execution_plan",
-      "status": "validated",
-      "title": "TASK-003 production deployment and smoke validation",
-      "path": "docs/21_execution_plans/EP-TASK-004-task003-production-deployment-and-smoke-validation.md",
-      "parent_ids": ["TASK-004"],
-      "updated_at": "2026-06-15T00:00:00Z"
-    },
-    {
-      "id": "GOAL-IMPACT-TASK-001",
-      "type": "goal",
-      "status": "review",
-      "title": "Goal impact for TASK-001",
-      "path": "docs/22_goal_impact/GOAL-IMPACT-TASK-001.md",
-      "parent_ids": ["TASK-001"],
-      "runlayer_goal_id": null,
-      "updated_at": "2026-06-13T00:00:00Z"
-    },
-    {
-      "id": "GOAL-IMPACT-TASK-002",
-      "type": "goal",
-      "status": "review",
-      "title": "Goal impact for TASK-002",
-      "path": "docs/22_goal_impact/GOAL-IMPACT-TASK-002.md",
-      "parent_ids": ["TASK-002"],
-      "runlayer_goal_id": null,
-      "updated_at": "2026-07-18T17:56:09+02:00"
-    },
-    {
-      "id": "GOAL-IMPACT-TASK-003",
-      "type": "goal",
-      "status": "validated",
-      "title": "Goal impact for TASK-003",
-      "path": "docs/22_goal_impact/GOAL-IMPACT-TASK-003.md",
-      "parent_ids": ["TASK-003"],
-      "runlayer_goal_id": null,
-      "updated_at": "2026-07-18T17:56:09+02:00"
-    },
-    {
-      "id": "GOAL-IMPACT-TASK-004",
-      "type": "goal",
-      "status": "validated",
-      "title": "Goal impact for TASK-004",
-      "path": "docs/22_goal_impact/GOAL-IMPACT-TASK-004.md",
-      "parent_ids": ["TASK-004"],
-      "runlayer_goal_id": null,
-      "updated_at": "2026-07-18T17:56:09+02:00"
-    },
-    {
-      "id": "CP-TASK-001",
-      "type": "context_package",
-      "status": "done",
-      "title": "IPS governance baseline context package",
-      "path": "docs/13_context_packages/CP-TASK-001-ips-governance-baseline.md",
-      "parent_ids": ["TASK-001"],
-      "updated_at": "2026-06-13T00:00:00Z"
-    },
-    {
-      "id": "CP-TASK-002",
-      "type": "context_package",
-      "status": "review",
-      "title": "SaaS access and customer onboarding context package",
-      "path": "docs/13_context_packages/CP-TASK-002-saas-access-and-customer-onboarding.md",
-      "parent_ids": ["TASK-002"],
-      "updated_at": "2026-07-18T17:56:09+02:00"
-    },
-    {
-      "id": "CP-TASK-003",
-      "type": "context_package",
-      "status": "review",
-      "title": "Customer integration ingest and webhook activation context package",
-      "path": "docs/13_context_packages/CP-TASK-003-customer-integration-ingest-and-webhook-activation.md",
-      "parent_ids": ["TASK-003"],
-      "updated_at": "2026-07-18T17:56:09+02:00"
-    },
-    {
-      "id": "CP-TASK-004",
-      "type": "context_package",
-      "status": "review",
-      "title": "TASK-003 production deployment and smoke validation context package",
-      "path": "docs/13_context_packages/CP-TASK-004-task003-production-deployment-and-smoke-validation.md",
-      "parent_ids": ["TASK-004"],
-      "updated_at": "2026-07-18T17:56:09+02:00"
-    },
-    {
-      "id": "PROMPT-TASK-001",
-      "type": "prompt",
-      "status": "done",
-      "title": "Prompt for TASK-001",
-      "path": "docs/14_prompts/PROMPT-TASK-001-ips-governance-baseline.md",
-      "parent_ids": ["TASK-001"],
-      "updated_at": "2026-06-13T00:00:00Z"
-    },
-    {
-      "id": "PROMPT-TASK-002-SAAS-ACCESS-AND-CUSTOMER-ONBOARDING",
-      "type": "prompt",
-      "status": "review",
-      "title": "Prompt for TASK-002",
-      "path": "docs/14_prompts/PROMPT-TASK-002-saas-access-and-customer-onboarding.md",
-      "parent_ids": ["TASK-002"],
-      "updated_at": "2026-06-13T00:00:00Z"
-    },
-    {
-      "id": "PROMPT-TASK-003-CUSTOMER-INTEGRATION-INGEST-AND-WEBHOOK-ACTIVATION",
-      "type": "prompt",
-      "status": "done",
-      "title": "Prompt for TASK-003",
-      "path": "docs/14_prompts/PROMPT-TASK-003-customer-integration-ingest-and-webhook-activation.md",
-      "parent_ids": ["TASK-003"],
-      "updated_at": "2026-06-15T00:00:00Z"
-    },
-    {
-      "id": "PROMPT-TASK-004-TASK003-PRODUCTION-DEPLOYMENT-AND-SMOKE-VALIDATION",
-      "type": "prompt",
-      "status": "draft",
-      "title": "Prompt for TASK-004",
-      "path": "docs/14_prompts/PROMPT-TASK-004-task003-production-deployment-and-smoke-validation.md",
-      "parent_ids": ["TASK-004"],
-      "updated_at": "2026-06-15T00:00:00Z"
-    },
-    {
-      "id": "VAL-TASK-001",
-      "type": "validation",
-      "status": "validated",
-      "title": "IPS governance baseline validation",
-      "path": "docs/12_validation/VAL-TASK-001-ips-governance-baseline.md",
-      "parent_ids": ["TASK-001"],
-      "updated_at": "2026-06-13T00:00:00Z"
-    },
-    {
-      "id": "VAL-TASK-002",
-      "type": "validation",
-      "status": "validated",
-      "title": "SaaS access and customer onboarding validation",
-      "path": "docs/12_validation/VAL-TASK-002-saas-access-and-customer-onboarding.md",
-      "parent_ids": ["TASK-002"],
-      "updated_at": "2026-06-13T00:00:00Z"
-    },
-    {
-      "id": "VAL-TASK-003",
-      "type": "validation",
-      "status": "validated",
-      "title": "Customer integration ingest and webhook activation validation",
-      "path": "docs/12_validation/VAL-TASK-003-customer-integration-ingest-and-webhook-activation.md",
-      "parent_ids": ["TASK-003"],
-      "updated_at": "2026-06-15T00:00:00Z"
-    },
-    {
-      "id": "VAL-TASK-004",
-      "type": "validation",
-      "status": "validated",
-      "title": "TASK-003 production deployment and smoke validation",
-      "path": "docs/12_validation/VAL-TASK-004-task003-production-deployment-and-smoke-validation.md",
-      "parent_ids": ["TASK-004"],
-      "updated_at": "2026-06-15T00:00:00Z"
-    },
-    {
       "id": "VAL-REPO-PLANNING-STANDARDIZATION-2026-08-30",
       "type": "validation",
       "status": "validated",
@@ -348,6 +344,50 @@
       "updated_at": "2026-08-30T21:04:11Z"
     },
     {
+      "id": "VAL-TASK-001",
+      "type": "validation",
+      "status": "validated",
+      "title": "IPS governance baseline validation",
+      "path": "docs/12_validation/VAL-TASK-001-ips-governance-baseline.md",
+      "parent_ids": [
+        "TASK-001"
+      ],
+      "updated_at": "2026-06-13T00:00:00Z"
+    },
+    {
+      "id": "VAL-TASK-002",
+      "type": "validation",
+      "status": "validated",
+      "title": "SaaS access and customer onboarding validation",
+      "path": "docs/12_validation/VAL-TASK-002-saas-access-and-customer-onboarding.md",
+      "parent_ids": [
+        "TASK-002"
+      ],
+      "updated_at": "2026-06-13T00:00:00Z"
+    },
+    {
+      "id": "VAL-TASK-003",
+      "type": "validation",
+      "status": "validated",
+      "title": "Customer integration ingest and webhook activation validation",
+      "path": "docs/12_validation/VAL-TASK-003-customer-integration-ingest-and-webhook-activation.md",
+      "parent_ids": [
+        "TASK-003"
+      ],
+      "updated_at": "2026-06-15T00:00:00Z"
+    },
+    {
+      "id": "VAL-TASK-004",
+      "type": "validation",
+      "status": "validated",
+      "title": "TASK-003 production deployment and smoke validation",
+      "path": "docs/12_validation/VAL-TASK-004-task003-production-deployment-and-smoke-validation.md",
+      "parent_ids": [
+        "TASK-004"
+      ],
+      "updated_at": "2026-06-15T00:00:00Z"
+    },
+    {
       "id": "VALIDATION-DEBT-LEDGER",
       "type": "validation_debt",
       "status": "ready",
@@ -355,33 +395,35 @@
       "path": "docs/orchestrator/VALIDATION_DEBT.md",
       "parent_ids": [],
       "updated_at": "2026-06-14T21:59:27+02:00"
+    },
+    {
+      "id": "VISION-001",
+      "type": "vision",
+      "status": "done",
+      "title": "Monitoring platform vision",
+      "path": "docs/01_vision/VISION.md",
+      "parent_ids": [],
+      "runlayer_goal_id": null,
+      "updated_at": "2026-06-13T00:00:00Z"
+    },
+    {
+      "id": "VISION-EVOLUTION-001",
+      "type": "vision",
+      "status": "draft",
+      "title": "Monitoring vision evolution backlog",
+      "path": "docs/01_vision/VISION_EVOLUTION.md",
+      "parent_ids": [
+        "VISION-001"
+      ],
+      "runlayer_goal_id": null,
+      "updated_at": "2026-06-13T00:00:00Z"
     }
   ],
   "warnings": [
-    {
-      "code": "MISSING_RUNLAYER_PROJECT_LINK",
-      "message": "[UNKNOWN: RunLayer project slug/permalink is not documented in tracked monitoring-microservice artifacts; project_registration remains unlinked.]",
-      "path": "docs/registry/REPOSITORY_PROFILE.json"
-    },
-    {
-      "code": "LEGACY_TASKS_METADATA",
-      "message": "[MISSING: TASKS.md lacks schema_version/repository/updated_at/active_goal_ids metadata header required by the standardization plan; legacy queue format retained.]",
-      "path": "TASKS.md"
-    },
-    {
-      "code": "TASKS_STATE_MISMATCH",
-      "message": "[UNKNOWN: TASKS.md still states that STATE.json is absent by owner decision; STATE.json was added for profile compliance and should be reconciled in a later owner-approved TASKS update.]",
-      "path": "TASKS.md"
-    },
-    {
-      "code": "INFERRED_ARTIFACT_STATUS",
-      "message": "[UNKNOWN: FEAT-002/003/004 and CP-TASK-002/003/004 do not declare machine-readable status metadata; statuses in this index are conservative projections from adjacent milestone/task evidence.]",
-      "path": "docs/10_features/FEAT-002-saas-access-and-customer-onboarding.md"
-    },
-    {
-      "code": "VALIDATION_DEBT_TEMPLATE_ONLY",
-      "message": "[MISSING: docs/orchestrator/VALIDATION_DEBT.md contains template placeholders and no concrete debt entries.]",
-      "path": "docs/orchestrator/VALIDATION_DEBT.md"
-    }
+    "[MISSING: TASKS.md lacks schema_version/repository/updated_at/active_goal_ids metadata header required by the standardization plan; legacy queue format retained.]",
+    "[MISSING: docs/orchestrator/VALIDATION_DEBT.md contains template placeholders and no concrete debt entries.]",
+    "[UNKNOWN: FEAT-002/003/004 and CP-TASK-002/003/004 do not declare machine-readable status metadata; statuses in this index are conservative projections from adjacent milestone/task evidence.]",
+    "[UNKNOWN: RunLayer project slug/permalink is not documented in tracked monitoring-microservice artifacts; project_registration remains unlinked.]",
+    "[UNKNOWN: TASKS.md still states that STATE.json is absent by owner decision; STATE.json was added for profile compliance and should be reconciled in a later owner-approved TASKS update.]"
   ]
 }

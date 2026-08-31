@@ -1,21 +1,29 @@
 {
-  "schemaVersion": 1,
-  "project": "monitoring-microservice",
-  "lifecycle": "planning-adopted",
-  "health": "documented-current-boundary",
-  "activeTask": "none",
-  "lastCompletedTask": "TASK-004",
-  "lastUpdated": "2026-08-30",
-  "deployment": {
-    "status": "documentation-only standardization adoption; runtime unchanged",
-    "environment": "production",
-    "url": "https://monitoring.alfares.cz"
+  "schema_version": "1.0",
+  "repository": "monitoring-microservice",
+  "service": {
+    "name": "monitoring-microservice",
+    "kind": "service",
+    "lifecycle": "planning-adopted",
+    "deployment": "kubernetes"
   },
-  "blockers": [
-    "[MISSING: Owner decision on the next monitoring implementation lane is still required in TASKS.md (target inventory reconciliation, alert noise reduction, dashboard validation, or deployment readiness verification).]"
-  ],
-  "followUps": [
-    "Document verified RunLayer project mapping when an owner-approved slug/permalink is available.",
-    "Add TASKS.md metadata header (schema_version/repository/updated_at/active_goal_ids) when owner approves TASKS normalization."
-  ]
+  "planning": {
+    "status": "blocked",
+    "active_goal_ids": [],
+    "next_ready_goal_ids": [],
+    "blocked_goal_ids": [],
+    "active_workstream_ids": [],
+    "last_updated_at": "2026-08-30T00:00:00Z"
+  },
+  "delivery": {
+    "last_validation_id": null,
+    "last_validation_status": null,
+    "validation_debt_count": 0,
+    "last_deployment_commit": null
+  },
+  "collection": {
+    "profile": "ips-full",
+    "artifact_index": "docs/registry/ARTIFACT_INDEX.json",
+    "status_source": "human-and-agent-maintained"
+  }
 }
