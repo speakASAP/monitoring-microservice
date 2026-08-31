@@ -27,6 +27,7 @@ MANIFESTS=(configmap.yaml external-secret.yaml deployment.yaml service.yaml depl
 
 _apply_manifest_tree() {
   local dir="$1"
+  [ -d "$dir" ] || return 0
   find "$dir" -name '*.yaml' -type f | sort | while read -r manifest; do
     kubectl apply -f "$manifest" -n "$NAMESPACE"
   done
