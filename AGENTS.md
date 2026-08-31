@@ -1,72 +1,25 @@
 # Repository Agent Instructions
 
-Shared rules live here:
+## Required Reading
 
-- Codex profile: `/home/ssf/.codex/AGENTS.md`
-- Cross-agent standard: `/home/ssf/.ai-agent-standards/CROSS_AGENT_AUTOMATION_STANDARD.md`
-- Repository operations: `AGENT_OPERATIONS.md`
+Read `BUSINESS.md`, `SYSTEM.md`, `TASKS.md`, `STATE.json`, the constitution, vision, invariants, and relevant task, plan, and validation artifacts before work.
 
-Read those first, then follow the repository-specific notes below and the current planning/status files.
+## Authority
 
-
-## Repository-Specific Notes
-
-# AGENTS.md — monitoring-microservice
+Repository intent and evidence are authoritative locally; reusable adoption standards and validation semantics are owned by `intent-preservation-system`.
 
 ## Intent Preservation System
 
-This repository follows the company standard in the numbered IPS directories.
+Preserve Vision -> Goal Impact -> System -> Feature -> Task -> Execution Plan -> Code -> Validation. Use `ips-adoption.json` and canonical artifact paths for adoption evidence.
 
-Before code changes, read:
+## Safety and Operations
 
-- `docs/00_constitution/CONSTITUTION.md`
-- `docs/01_vision/VISION.md`
-- `docs/17_governance/PROJECT_INVARIANTS.md`
-- relevant `docs/11_tasks/`, `docs/21_execution_plans/`, `docs/22_goal_impact/`, and `docs/12_validation/` artifacts
+Do not expose secrets or production data. Preserve same-origin dashboard calls, synchronize registry and blackbox targets, and reload rather than rollout restart Prometheus because its single PVC can lock-crash.
 
-Required gates for governance or deployment-impacting work:
+## Project-Specific Rules
 
-```bash
-python3 scripts/strict_doc_audit.py --format markdown --fail-on-issues
-python3 scripts/pre_coding_gate.py --root .
-python3 scripts/deployment_readiness_gate.py --root .
-```
+The API is `src/`, dashboard is `web/`, and stack configuration is `k8s/`. Validate with `npm run build`, `npm test`, and relevant IPS gates before production-impacting work.
 
-Do not put secrets, raw production data, confidential identifiers, or real customer data in prompts, examples, logs, plans, tests, screenshots, or reports.
+## Required Final Report
 
-## Knowledge Retrieval
-
-Use `docs-rag-microservice` for bounded discovery when it is healthy, then
-verify deployment, security, database, integration and public-contract facts
-against the cited Git source. Git remains authoritative.
-
-Authority and fallback rules:
-`/home/ssf/Documents/Github/shared/docs/DOCUMENTATION_AUTHORITY.md`.
-
-Do not generate tokens in documentation or assume an unconfident/failed RAG
-response means that source documentation does not exist.
-
-## Boundaries
-
-- **API:** `src/` — NestJS, ecosystem registry, alerts, webhooks
-- **Dashboard:** `web/` — Next.js operational UI
-- **Stack:** `k8s/` — Prometheus, Grafana, Alertmanager, exporters (do not edit nginx-microservice)
-
-## Key commands
-
-```bash
-npm run build          # compile API
-npm test               # unit tests
-./scripts/deploy.sh    # full K8s deploy (API + web + monitoring stack)
-```
-
-## Registry
-
-All apps/services/repos: `src/config/ecosystem-services.ts`  
-Prometheus probes: `k8s/prometheus/configmap-config.yaml` (keep in sync)
-
-## Deploy rules
-
-- Always use `./scripts/deploy.sh` on production
-- After registry changes: rebuild API image (deploy script does this)
-- Prometheus: reload config only — never rollout restart (PVC lock)
+Report changed files, documents created, validation evidence, validation debt, blockers, deviations, and the next concrete action.

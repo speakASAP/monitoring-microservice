@@ -1,66 +1,25 @@
 # Agent Operations
 
-This repository follows the company Cross-Agent Automation Standard from the Intent Preservation System.
+## Roles
 
-## Required Chain
-
-All agents must preserve:
-
-```text
-Vision -> Goal Impact -> System -> Feature -> Task -> Execution Plan -> Coding Prompt -> Code -> Validation
-```
-
-## Agent Roles
-
-- Readiness scanner: classifies work as ready now, dependency-gated, blocked, active elsewhere, complete, or needs owner input. It does not implement.
-- Worker agent: implements one bounded goal or workstream with explicit scope.
-- Worker monitor: checks active worker status and conflict risks.
-- Integration validator: validates worker batches and separates current-task failures from known validation debt.
+Readiness scanners classify work; worker agents implement one bounded goal; worker monitors identify conflicts; integration validators separate current-task failures from known debt.
 
 ## Before Work
 
-Read repository-local instructions and planning sources first, including any `AGENTS.md`, `TASKS.md`, `STATE.json`, `docs/orchestrator/*`, `docs/intent-preservation/*`, or project-specific equivalents.
-
-Before coding, verify:
-
-- task and upstream traceability exist;
-- execution plan is approved or explicitly draft;
-- context package or equivalent source material exists;
-- sensitive-data classification is clear;
-- contract/schema and replay/determinism impact is clear;
-- validation commands are named;
-- parallel workstreams, blockers, shared files, integration owner, and merge order are defined.
+Confirm traceability, approved intent, relevant invariants, allowed files, integration contracts, sensitive-data handling, and validation commands before implementation.
 
 ## Parallel Work
 
-Do not start parallel edits to the same file, schema, migration, public contract, deployment file, generated index, or status document unless one integration owner and conflict-resolution order are documented.
-
-Every parallel workstream must declare:
-
-- objective;
-- owner role;
-- allowed files;
-- forbidden files;
-- dependencies and blockers;
-- validation evidence;
-- expected output;
-- handoff notes.
+Do not concurrently modify the registry, Prometheus configuration, deployment files, public contracts, or state artifacts without one integration owner and a documented merge order.
 
 ## Validation Debt
 
-Use `docs/orchestrator/VALIDATION_DEBT.md`, `docs/intent-preservation/VALIDATION_DEBT.md`, or the nearest repo-standard ledger to record known out-of-scope validation failures.
+Record only out-of-scope known failures in `docs/orchestrator/VALIDATION_DEBT.md`. Debt never excuses a failure in active-task files or acceptance criteria.
 
-Validation debt does not excuse current-task failures. If a failure touches current-task files or acceptance criteria, treat it as blocking.
+## Handoff
 
-## Remote/Secret Safety
+Record completed work, validation evidence, blockers, changed contracts, and next owner action in `TASKS.md` and `STATE.json` at task boundaries.
 
-- Do not copy remote repository contents into local user directories.
-- Deploy only under pre-existing human-approved project or ecosystem policy; agents cannot self-authorize by editing policy.
-- Do not print secrets, tokens, raw production data, customer identifiers, or private evidence.
-- Use `[MISSING: ...]` or `[UNKNOWN: ...]` instead of inventing facts.
+## Project-Specific Operations
 
-## Final Report
-
-Report files changed, documents created, validation evidence, validation debt used or added, blockers, deviations, and the next concrete action.
-
-Next step: Follow the repository-specific `AGENTS.md` and planning files for the current task.
+Synchronize `src/config/ecosystem-services.ts` with `k8s/prometheus/configmap-config.yaml`, rebuild through approved deployment flow, and reload Prometheus configuration rather than restart it.

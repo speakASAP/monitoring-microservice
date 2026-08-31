@@ -1,89 +1,64 @@
 # System: monitoring-microservice
 
-## Service identity
-
-- Service name: `monitoring-microservice`
-- Web deployment: `monitoring-web`
-- Domain: `monitoring.alfares.cz`
-- Grafana: `grafana.alfares.cz`
-- Runtime: NestJS API (Node 24-slim) + Next.js dashboard
-- Ports: API `3395`, frontend `3396`
-
-## Deployment
-
-**Platform:** Kubernetes (k3s) · namespace `statex-apps`  
-**Images:** `localhost:5000/monitoring-microservice:latest`, `localhost:5000/monitoring-web:latest`  
-**Deploy:** `./scripts/deploy.sh`  
-**Logs:** `kubectl logs -n statex-apps -l app=monitoring-microservice -f`  
-**Restart API only:** `kubectl rollout restart deployment/monitoring-microservice -n statex-apps`
-
-### What deploy.sh does
-
-1. Builds and pushes API + web Docker images
-2. Applies all manifests under `k8s/` (Prometheus, Grafana, Alertmanager, blackbox, node-exporter, kube-state-metrics, API, web, ingress)
-3. **Reloads Prometheus config** via `POST /-/reload` (never `rollout restart` Prometheus — single PVC causes lock crash)
-4. Rolls out `monitoring-microservice` and `monitoring-web`
-5. Verifies `/health` and that `/api/services/list` returns 50+ entries
-
-### Adding or changing monitored services
-
-Edit **`src/config/ecosystem-services.ts`** (single registry for dashboard + health checks).
-
-Then sync Prometheus blackbox targets in **`k8s/prometheus/configmap-config.yaml`** (same services/ports/paths).
-
-Run `./scripts/deploy.sh` — applying ConfigMap alone is not enough; the **API image must be rebuilt** or the dashboard will show the old list.
-
-Repository-only entries (`kind: 'repository'`) appear in the dashboard but are not probed.
-
-### Prometheus config reload (manual)
-
-```bash
-POD=$(kubectl get pod -n statex-apps -l app=prometheus --field-selector=status.phase=Running -o jsonpath='{.items[0].metadata.name}')
-kubectl exec -n statex-apps "$POD" -- wget -qO- --post-data='' 'http://127.0.0.1:9090/-/reload'
+```yaml
+id: SYSTEM-monitoring-microservice
+status: reviewed
+owner: project owner
+created: 2026-06-13
+last_updated: 2026-08-30
+completeness_level: complete
+upstream:
+  - BUSINESS.md
+  - docs/01_vision/VISION.md
+downstream:
+  - docs/06_architecture/INTEGRATION_CONTRACT.md
+  - docs/17_governance/PROJECT_INVARIANTS.md
 ```
 
-Do **not** use `kubectl rollout restart deployment/prometheus` — RWO volume lock prevents two pods.
+## Purpose
 
-## Monitoring stack (statex-apps)
+Provide centralized observability for the Statex ecosystem through a NestJS API, a Next.js dashboard, health checks, alerts, and the Kubernetes monitoring stack.
 
-| Component | Service | Port |
-|-----------|---------|------|
-| Prometheus | prometheus | 9090 |
-| Grafana | grafana | 3000 |
-| Alertmanager | alertmanager | 9093 |
-| Blackbox exporter | blackbox-exporter | 9115 |
-| Node exporter | node-exporter | 9100 |
-| kube-state-metrics | kube-state-metrics | 8080 |
+## Responsibilities
 
-Scrape targets: `k8s/prometheus/configmap-config.yaml` (blackbox HTTP probes for ecosystem `/health` endpoints).
+- Run `monitoring-microservice` on port 3395 and `monitoring-web` on port 3396.
+- Maintain the API health registry in `src/config/ecosystem-services.ts`.
+- Persist alerts and incidents in PostgreSQL schema `monitoring`.
+- Receive Alertmanager webhooks, record alert transitions, log them, and send Telegram notifications.
+- Configure Prometheus, Grafana, Alertmanager, blackbox exporter, node exporter, and kube-state-metrics in `statex-apps`.
 
-### Dashboard API calls
+## Non-Responsibilities
 
-The Next.js dashboard runs in the browser and must call **`/api/*` on the same origin** (`https://monitoring.alfares.cz/api/...` via ingress). Do not point the frontend at internal cluster URLs (`monitoring-microservice:3395`) — the browser cannot resolve them and the UI falls back to empty/mock data.
+The service does not own external service business data, authentication authority, payment processing, Prometheus rule evaluation, Grafana visualization, or browser access to internal cluster URLs.
+
+## Inputs
+
+API requests to `/health`, `/api/services`, `/api/services/list`, and `/api/alerts`; Alertmanager `POST /api/webhooks/alertmanager`; `DB_*` settings; and bearer-token validation through `POST /auth/validate`.
+
+## Outputs
+
+Same-origin dashboard API responses, persisted alert and incident data, structured logs sent to `logging-microservice`, and Telegram messages sent through `notifications-microservice`.
 
 ## Dependencies
 
-| Service | Usage |
-|---------|-------|
-| auth-microservice | JWT (future dashboard auth) |
-| database-server (`DB_*`) | PostgreSQL — alerts/incidents |
-| logging-microservice | Operational logs |
-| notifications-microservice | Alert delivery (Telegram via webhook) |
+`auth-microservice` validates bearer tokens; `db-server-postgres` holds alert and incident data; `logging-microservice` receives operational logs; and `notifications-microservice` delivers alerts. Vault path `secret/prod/monitoring-microservice` reaches the workload through External Secrets Operator.
 
-## Secrets
+## Upstream Traceability
 
-Vault path: `secret/prod/monitoring-microservice` → ESO → `monitoring-microservice-secret`
+`BUSINESS.md` defines the operator-facing observability goal and `docs/01_vision/VISION.md` defines the durable central-visibility outcome.
 
-## API endpoints
+## Downstream Artifacts
 
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | /health | Health check |
-| GET | /api/services | All services with live health status |
-| GET | /api/services/list | Registry without health probe |
-| GET | /api/alerts | Alerts |
-| POST | /api/webhooks/alertmanager | Alertmanager webhook |
+`docs/06_architecture/INTEGRATION_CONTRACT.md`, `docs/17_governance/PROJECT_INVARIANTS.md`, and the bootstrap chain record integration, safety, and adoption evidence.
 
-## Current state
+## Validation Criteria
 
-Stage: production · Deploy: Kubernetes (`statex-apps`)
+The health endpoint responds, `/api/services/list` exposes the registry, source-level auth/logging/notifications/database paths remain present, and the IPS adoption validator passes.
+
+## Open Questions
+
+No owner-selected next lane exists among target inventory reconciliation, alert-noise reduction, dashboard validation, and deployment-readiness verification.
+
+## Operational Invariant
+
+`./scripts/deploy.sh` rebuilds API and web images, applies stack manifests, reloads Prometheus through `POST /-/reload`, and rolls out only `monitoring-microservice` and `monitoring-web`. Never rollout restart Prometheus: the single RWO PVC can cause a lock crash. Registry changes also require synchronizing `k8s/prometheus/configmap-config.yaml` and rebuilding the API image.

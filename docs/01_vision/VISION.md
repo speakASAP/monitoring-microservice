@@ -1,48 +1,51 @@
 # Monitoring Microservice Vision
 
 ```yaml
-id: VISION-001
+id: VISION-monitoring-microservice
 status: approved
-owner: Project Sponsor / Product Owner
+owner: project owner
 created: 2026-06-13
-last_updated: 2026-06-13
+last_updated: 2026-08-30
 completeness_level: complete
 upstream:
   - ../00_constitution/CONSTITUTION.md
 downstream:
-  - ../02_business_case/BUSINESS_CASE.md
-  - ../04_systems/SYS-001-monitoring-platform.md
-related_adrs:
-  - ../07_decisions/ADR-001-use-ips-governance-baseline.md
+  - ../../BUSINESS.md
+  - ../../SYSTEM.md
 ```
 
-## Purpose
+## One-Sentence Vision
 
-The monitoring-microservice exists to give operators one reliable place to understand health, alerts, dashboards, and observability signals across the Statex ecosystem.
+Give Statex operators one reliable place to understand ecosystem health, alerts, dashboards, and observability signals.
 
-## Vision Goals
+## Problem Statement
 
-- Maintain a centralized registry of services and repositories that can be surfaced by the API and dashboard.
-- Monitor ecosystem health through Kubernetes-hosted Prometheus, Grafana, Loki, Alertmanager, blackbox exporter, node exporter, and kube-state-metrics.
-- Provide operational APIs for service status, alert review, health checks, daily digest data, and Alertmanager webhooks.
-- Keep dashboard browser calls same-origin through `/api/*` so the public UI does not depend on internal cluster DNS.
-- Deploy consistently through `./scripts/deploy.sh` using the existing Kubernetes namespace and image flow.
+Fragmented or stale health and alerting information prevents operators from safely understanding production conditions.
+
+## Target Users
+
+Statex operators using the monitoring API, dashboard, Grafana, Alertmanager, and Prometheus-backed health views.
+
+## Core User Need
+
+Operators need accurate health, alert, and dashboard information without exposing internal cluster addresses to browser clients.
+
+## Key Outcomes
+
+- Central registry and health status through the API and dashboard.
+- Prometheus, Grafana, Alertmanager, and exporter signals in `statex-apps`.
+- Same-origin public dashboard API access and alert notifications.
 
 ## Non-Goals
 
-- This service is not the owner of business-domain data for other microservices.
-- This service is not an authentication authority.
-- This service is not a replacement for Grafana dashboards or Prometheus rule evaluation.
-- This service must not store secrets in documentation or prompt artifacts.
+The service does not own other domain data, provide identity authority, replace Grafana or Prometheus evaluation, or store secrets in documentation.
 
 ## Success Criteria
 
-- `/health` reports service availability.
-- `/api/services/list` returns the configured ecosystem registry.
-- Dashboard service data remains consistent with the API registry.
-- Prometheus blackbox targets are kept in sync with monitored service health endpoints.
-- Deployment evidence confirms API and web rollout after changes.
+`/health` reports availability, `/api/services/list` returns the registry, dashboard data follows that registry, and blackbox targets align with monitored health endpoints.
 
-## Source Evidence
+## Approval
 
-This vision is derived from `SYSTEM.md`, `AGENTS.md`, `package.json`, and existing Kubernetes manifests in this repository.
+Status: approved
+Approved by: project owner
+Approval evidence: owner-confirmation: monitoring-microservice-onboarding-approved

@@ -1,15 +1,33 @@
 # monitoring-microservice
 
-Centralized observability platform for the Statex ecosystem.
+## Status
 
-This repository follows the company Intent Preservation System documented under the numbered IPS folders. Start with `docs/00_constitution/CONSTITUTION.md`, `docs/01_vision/VISION.md`, `SYSTEM.md`, and `docs/16_operations/LOCAL_WORKFLOW.md` before implementation work.
+Production Kubernetes monitoring and observability service with an adopted IPS profile.
 
-## Key commands
+## Documentation Authority
 
-```bash
-npm run build
-npm test
-python3 scripts/strict_doc_audit.py --format markdown --fail-on-issues
-python3 scripts/pre_coding_gate.py --root .
-python3 scripts/deployment_readiness_gate.py --root .
-```
+Project intent is defined by `BUSINESS.md`, `SYSTEM.md`, and canonical artifacts under `docs/`; reusable standards and validation semantics are owned by `intent-preservation-system`.
+
+## Capabilities
+
+NestJS health and alert API, Next.js dashboard, Alertmanager webhook handling, PostgreSQL alert persistence, and Prometheus/Grafana stack operations.
+
+## Interfaces
+
+API port 3395 exposes `/health`, `/api/services`, `/api/services/list`, `/api/alerts`, and `/api/webhooks/alertmanager`; the web dashboard listens on 3396 and uses same-origin `/api/*`.
+
+## Development
+
+Run `npm run build`, `npm test`, or `npm run lint` at root. Build the dashboard with `cd web && npm run build`.
+
+## Configuration
+
+`DB_*`, `AUTH_SERVICE_URL`, `LOGGING_SERVICE_URL`, `NOTIFICATION_SERVICE_URL`, `PROMETHEUS_URL`, `GRAFANA_URL`, and `ALERTMANAGER_URL` configure integrations. Secrets arrive through Vault and External Secrets Operator.
+
+## Deployment
+
+The service runs in `statex-apps`; `./scripts/deploy.sh` is the approved deployment flow and reloads Prometheus rather than restarting it.
+
+## Health and Observability
+
+Use `GET /health` and `GET /api/services/list`; operators use `https://monitoring.alfares.cz` and `https://grafana.alfares.cz`.

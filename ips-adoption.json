@@ -1,0 +1,149 @@
+{
+  "schemaVersion": 1,
+  "profile": "infrastructure",
+  "project": {
+    "name": "monitoring-microservice",
+    "repository": "https://github.com/speakASAP/monitoring-microservice.git"
+  },
+  "standard": {
+    "repository": "https://github.com/speakASAP/intent-preservation-system",
+    "revision": "22c061cb5f4ff641bbdb90f10ad1e2072e04a9f2"
+  },
+  "artifacts": {
+    "readme": "README.md",
+    "business": "BUSINESS.md",
+    "system": "SYSTEM.md",
+    "agents": "AGENTS.md",
+    "operations": "AGENT_OPERATIONS.md",
+    "claude": "CLAUDE.md",
+    "tasks": "TASKS.md",
+    "state": "STATE.json",
+    "constitution": "docs/00_constitution/CONSTITUTION.md",
+    "vision": "docs/01_vision/VISION.md",
+    "integrationContract": "docs/06_architecture/INTEGRATION_CONTRACT.md",
+    "projectInvariants": "docs/17_governance/PROJECT_INVARIANTS.md",
+    "validationDebt": "docs/orchestrator/VALIDATION_DEBT.md",
+    "bootstrapTask": "docs/11_tasks/TASK-001-bootstrap-service.md",
+    "bootstrapGoalImpact": "docs/22_goal_impact/GOAL-IMPACT-TASK-001.md",
+    "bootstrapExecutionPlan": "docs/21_execution_plans/EP-TASK-001-bootstrap-service.md",
+    "bootstrapValidation": "docs/12_validation/VAL-TASK-001-bootstrap-service.md"
+  },
+  "integrationReview": [
+    {
+      "capability": "auth",
+      "component": "auth-microservice",
+      "decision": "required",
+      "reason": "`src/auth/auth-consumer.service.ts` validates bearer tokens with auth-microservice, and monitoring guards enforce authenticated operator access.",
+      "contract": "POST /auth/validate bearer-token validation",
+      "configuration": "AUTH_SERVICE_URL defaults to http://auth-microservice:3370 in src/config/configuration.ts",
+      "failureMode": "Missing or invalid tokens are rejected with UnauthorizedException.",
+      "validation": "Auth consumer and guard specifications cover token validation and role authorization."
+    },
+    {
+      "capability": "postgres",
+      "component": "db-server-postgres",
+      "decision": "required",
+      "reason": "TypeORM persists alerts, incidents, customer integrations, and health snapshots in PostgreSQL schema monitoring.",
+      "contract": "PostgreSQL persistence through TypeORM entities and repositories",
+      "configuration": "DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, and DB_NAME configure the connection.",
+      "failureMode": "Persistence-dependent requests fail rather than inventing alert or incident data.",
+      "validation": "TypeORM configuration is wired in src/app.module.ts and entity services use repositories."
+    },
+    {
+      "capability": "redis",
+      "component": "db-server-redis",
+      "decision": "not-applicable",
+      "reason": "No Redis client, dependency, or Redis configuration exists in current source, package manifest, or Kubernetes configuration."
+    },
+    {
+      "capability": "logging",
+      "component": "logging-microservice",
+      "decision": "required",
+      "reason": "src/common/logging/logging.service.ts sends structured operational logs to logging-microservice.",
+      "contract": "POST structured operational logs to logging-microservice",
+      "configuration": "LOGGING_SERVICE_URL defaults to http://logging-microservice:3367.",
+      "failureMode": "Log-delivery failure reduces operational visibility and is handled by the logging path without fabricating success.",
+      "validation": "LoggingService is used by webhook and monitoring flows."
+    },
+    {
+      "capability": "notifications",
+      "component": "notifications-microservice",
+      "decision": "required",
+      "reason": "src/common/notifications/notifications.client.ts sends Alertmanager-derived Telegram messages through notifications-microservice.",
+      "contract": "POST notification delivery request for Telegram alert messages",
+      "configuration": "NOTIFICATION_SERVICE_URL and NOTIFICATION_SERVICE_TOKEN configure delivery.",
+      "failureMode": "Delivery failure is logged and rethrown so a muted alerting path is visible.",
+      "validation": "WebhooksService routes firing and resolved transitions through NotificationsClient."
+    },
+    {
+      "capability": "ai",
+      "component": "ai-microservice",
+      "decision": "not-applicable",
+      "reason": "No AI client, model call, prompt path, package dependency, or AI configuration exists in current source or Kubernetes configuration."
+    },
+    {
+      "capability": "payments",
+      "component": "payments-microservice",
+      "decision": "not-applicable",
+      "reason": "Monitoring has no payment capture, reconciliation, or payments client in current source or configuration."
+    },
+    {
+      "capability": "catalog",
+      "component": "catalog-microservice",
+      "decision": "not-applicable",
+      "reason": "Monitoring has no catalog client or product-data dependency in current source or configuration."
+    },
+    {
+      "capability": "orders",
+      "component": "orders-microservice",
+      "decision": "not-applicable",
+      "reason": "Monitoring probes service health but has no Orders domain client or order-processing integration in current source or configuration."
+    },
+    {
+      "capability": "warehouse",
+      "component": "warehouse-microservice",
+      "decision": "not-applicable",
+      "reason": "Monitoring has no inventory or warehouse client in current source or configuration."
+    },
+    {
+      "capability": "invoices",
+      "component": "invoices-microservice",
+      "decision": "not-applicable",
+      "reason": "Monitoring has no invoice-domain client in current source or configuration."
+    },
+    {
+      "capability": "object-storage",
+      "component": "minio-microservice",
+      "decision": "not-applicable",
+      "reason": "No S3, MinIO, bucket, or object-storage client and configuration exists in current source or package dependencies."
+    },
+    {
+      "capability": "event-bus",
+      "component": "RabbitMQ",
+      "decision": "not-applicable",
+      "reason": "No RabbitMQ, AMQP, or other event-bus client, package dependency, or configuration exists; Alertmanager uses an HTTP webhook."
+    },
+    {
+      "capability": "docs-rag",
+      "component": "docs-rag-microservice",
+      "decision": "required",
+      "reason": "Repository documentation must remain discoverable by the mandatory documentation retrieval capability.",
+      "contract": "Direct Git repository ingestion and repository-scoped retrieval",
+      "configuration": "The repository is represented by its Git source and canonical local IPS documents.",
+      "failureMode": "When documentation retrieval is unavailable, repository-local Git documentation remains authoritative.",
+      "validation": "Canonical artifact paths and project identity are concrete in ips-adoption.json."
+    },
+    {
+      "capability": "monitoring",
+      "component": "monitoring-microservice",
+      "decision": "not-applicable",
+      "reason": "This service is the monitoring domain itself and does not consume another monitoring service as a client."
+    },
+    {
+      "capability": "backups",
+      "component": "backups-microservice",
+      "decision": "not-applicable",
+      "reason": "Current repository source and documentation contain no documented backup-service contract or backup configuration for Prometheus or Grafana data."
+    }
+  ]
+}

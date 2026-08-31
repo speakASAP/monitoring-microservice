@@ -1,38 +1,37 @@
-# GOAL-IMPACT-TASK-001: IPS Governance Baseline
+# GOAL-IMPACT-TASK-001: Canonical IPS adoption
 
 ```yaml
 id: GOAL-IMPACT-TASK-001
-artifact_type: task
-artifact_id: TASK-001
-artifact_path: ../11_tasks/TASK-001-implement-ips-governance-baseline.md
-primary_goal: VISION-001
-impact_level: high
-upstream_links:
-  - ../01_vision/VISION.md
-  - ../10_features/FEAT-001-ips-governance-baseline.md
-status: reviewed
-owner: Operations Lead
-created: 2026-06-13
-last_updated: 2026-06-13
-completeness_level: complete
+status: validated
+owner: project owner
+created: 2026-08-30
+last_updated: 2026-08-30
 upstream:
   - ../01_vision/VISION.md
 downstream:
-  - ../21_execution_plans/EP-TASK-001-implement-ips-governance-baseline.md
-related_adrs:
-  - ../07_decisions/ADR-001-use-ips-governance-baseline.md
+  - ../21_execution_plans/EP-TASK-001-bootstrap-service.md
 ```
 
-## Explanation
+## Goal
 
-Implementing IPS governance protects the monitoring-microservice vision by requiring future changes to preserve traceability, operational invariants, sensitive-data policy, and validation evidence.
+Make the already-running monitoring service a truthful, validator-passing IPS adoption record without changing its runtime behavior.
 
-## Evidence
+## Contribution
 
-- Existing repo docs identify deployment, registry, same-origin dashboard, and Prometheus reload constraints.
-- The company standard requires task, execution-plan, goal-impact, and validation artifacts before implementation work.
-- Monitoring changes have production operational impact and therefore benefit from explicit gates.
+Canonical documents consolidate the pre-existing partial registry and planning artifacts into the standard task, plan, validation, state, and integration paths.
 
-## Validation
+## Success Metric
 
-Evidence is recorded in `docs/12_validation/VAL-TASK-001-ips-governance-baseline.md`.
+The adoption validator reports all 16 capability decisions and no document errors for monitoring-microservice.
+
+## Invariant Compatibility
+
+The work records and preserves synchronized targets, same-origin dashboard access, secret handling, and the Prometheus reload-only rule.
+
+## Upstream and Downstream Links
+
+The task is `../11_tasks/TASK-001-bootstrap-service.md`; implementation evidence is in `../21_execution_plans/EP-TASK-001-bootstrap-service.md`; validation is `../12_validation/VAL-TASK-001-bootstrap-service.md`.
+
+## Validation Method
+
+Run `python3 ../intent-preservation-system/scripts/validate_adoption_profile.py --root . --phase planning` from the repository parent context.

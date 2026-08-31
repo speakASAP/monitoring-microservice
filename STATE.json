@@ -1,29 +1,25 @@
 {
-  "schema_version": "1.0",
-  "repository": "monitoring-microservice",
-  "service": {
-    "name": "monitoring-microservice",
-    "kind": "service",
-    "lifecycle": "planning-adopted",
-    "deployment": "kubernetes"
+  "schemaVersion": 1,
+  "project": "monitoring-microservice",
+  "lifecycle": "production",
+  "health": "operational",
+  "activeTask": "none",
+  "lastUpdated": "2026-08-30",
+  "deployment": {
+    "status": "production",
+    "notes": "Kubernetes API, dashboard, and monitoring stack are current; canonical documentation adoption is complete."
   },
-  "planning": {
-    "status": "blocked",
-    "active_goal_ids": [],
-    "next_ready_goal_ids": [],
-    "blocked_goal_ids": [],
-    "active_workstream_ids": [],
-    "last_updated_at": "2026-08-30T00:00:00Z"
-  },
-  "delivery": {
-    "last_validation_id": null,
-    "last_validation_status": null,
-    "validation_debt_count": 0,
-    "last_deployment_commit": null
-  },
-  "collection": {
-    "profile": "ips-full",
-    "artifact_index": "docs/registry/ARTIFACT_INDEX.json",
-    "status_source": "human-and-agent-maintained"
+  "blockers": [
+    "No owner-selected next implementation or operations lane exists for target inventory reconciliation, alert and health-check noise reduction, dashboard validation, or deployment-readiness verification."
+  ],
+  "followUps": [
+    "Legacy planning was blocked because TASKS.md did not identify the next monitoring implementation, target coverage, alerting, or operations priority.",
+    "Canonical IPS documentation adoption completed on 2026-08-30 without resolving the separate owner queue decision."
+  ],
+  "legacy": {
+    "schema_version": "1.0",
+    "service_lifecycle": "planning-adopted",
+    "planning_status": "blocked",
+    "artifact_index": "docs/registry/ARTIFACT_INDEX.json"
   }
 }

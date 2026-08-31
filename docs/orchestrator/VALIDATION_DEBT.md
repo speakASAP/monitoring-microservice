@@ -2,38 +2,16 @@
 
 ## Purpose
 
-Record known validation failures that are not caused by the current task, so agents can separate existing repo debt from real regressions.
+Record known out-of-scope validation failures separately from current-task failures.
 
 ## Rules
 
-- This ledger does not excuse current-task failures.
-- Every entry needs an owner, scope, and unblock condition.
-- Do not include secrets, tokens, raw production data, customer identifiers, or private evidence.
-- If a failure starts affecting the current task, promote it from debt to blocker.
+Debt never excuses a failure touching active-task files or acceptance criteria. Entries must identify safe evidence, owner, scope, and an unblock condition; never include secrets or production data.
 
 ## Entries
 
-| ID | Date | Command | Failure Summary | Scope | Owner | Blocks Current Task? | Unblock Condition | Evidence |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| VD-001 | YYYY-MM-DD | `[command]` | `[sanitized failure]` | repo-wide / task-specific / external service | `[owner]` | yes/no | `[required fix or approval]` | `[report path or safe excerpt]` |
+No validation debt is recorded for the canonical documentation-adoption task. The owner-selected next implementation lane is a planning blocker in `STATE.json`, not validation debt.
 
-## Current-Task Decision Checklist
+## Update Format
 
-- Does the failing command touch files changed by this task?
-- Does the failure mention this task ID, goal ID, or changed module?
-- Is the failure already listed above with `Blocks Current Task? = no`?
-- Did the failure exist before this task started?
-- Is the validation command required by the current task acceptance criteria?
-
-## Agent Reporting Format
-
-```text
-Validation debt check:
-- Command:
-- Result:
-- Matched ledger entry:
-- Current-task impact:
-- Next action:
-```
-
-Next step: Keep entries current whenever validation failures are classified as out of scope.
+Record date, command, sanitized failure summary, scope, owner, current-task impact, unblock condition, and safe evidence location for each future debt entry.
