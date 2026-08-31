@@ -1,15 +1,12 @@
 # Tasks: monitoring-microservice
 
 ## Active
-
 No implementation task is active. Canonical IPS documentation adoption is completed.
 
 ## Ready Next
-
 The project owner must choose one implementation or operations lane: target inventory reconciliation, alert and health-check noise reduction, dashboard validation, or deployment-readiness verification.
 
 ## Blocked
-
 The next monitoring implementation goal is blocked on the owner selecting a bounded lane and target coverage. The prior planning status referred to this separate queue decision, not the completed documentation-adoption task.
 
 ## Completed
