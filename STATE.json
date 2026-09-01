@@ -25,30 +25,5 @@
     "profile": "ips-full",
     "artifact_index": "docs/registry/ARTIFACT_INDEX.json",
     "status_source": "TASKS.md owner-lane blocker and docs/12_validation/VAL-REPO-PLANNING-STANDARDIZATION-2026-08-30.md; RunLayer mapping remains [UNKNOWN] and was not inferred."
-  },
-  "legacy": {
-    "schemaVersion": 1,
-    "project": "monitoring-microservice",
-    "lifecycle": "production",
-    "health": "operational",
-    "activeTask": "none",
-    "lastUpdated": "2026-08-30",
-    "deployment": {
-      "status": "production",
-      "notes": "Kubernetes API, dashboard, and monitoring stack are current; canonical documentation adoption is complete."
-    },
-    "blockers": [
-      "No owner-selected next implementation or operations lane exists for target inventory reconciliation, alert and health-check noise reduction, dashboard validation, or deployment-readiness verification."
-    ],
-    "followUps": [
-      "Legacy planning was blocked because TASKS.md did not identify the next monitoring implementation, target coverage, alerting, or operations priority.",
-      "Canonical IPS documentation adoption completed on 2026-08-30 without resolving the separate owner queue decision."
-    ],
-    "onboarding_state_extension": {
-      "schema_version": "1.0",
-      "service_lifecycle": "planning-adopted",
-      "planning_status": "blocked",
-      "artifact_index": "docs/registry/ARTIFACT_INDEX.json"
-    }
   }
 }
