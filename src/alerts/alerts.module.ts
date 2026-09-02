@@ -7,13 +7,15 @@ import { AlertNotifier } from './alert-notifier';
 import { NotificationsClient } from '../common/notifications/notifications.client';
 import { MonitoringIngestGuard } from '../auth/monitoring-ingest.guard';
 import { HealthWatcher } from './health-watcher';
+import { CredentialWatcher } from './credential-watcher';
+import { CredentialsController } from './credentials.controller';
 import { ServicesModule } from '../services/services.module';
 import { LoggingService } from '../common/logging/logging.service';
 
 @Module({
   imports: [TypeOrmModule.forFeature([Alert]), ServicesModule],
-  controllers: [AlertsController],
-  providers: [AlertsService, AlertNotifier, NotificationsClient, MonitoringIngestGuard, HealthWatcher, LoggingService],
+  controllers: [AlertsController, CredentialsController],
+  providers: [AlertsService, AlertNotifier, NotificationsClient, MonitoringIngestGuard, HealthWatcher, CredentialWatcher, LoggingService],
   exports: [AlertsService, AlertNotifier],
 })
 export class AlertsModule {}
