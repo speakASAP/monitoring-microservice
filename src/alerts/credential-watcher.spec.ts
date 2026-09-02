@@ -43,7 +43,7 @@ describe('CredentialWatcher', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    process.env.INTERNAL_SERVICE_TOKEN = 'test-token';
+    process.env.AUTH_SERVICE_TOKEN = 'test-token';
   });
 
   it('reports a principal that has never reported as silent, not as healthy', async () => {
@@ -55,6 +55,20 @@ describe('CredentialWatcher', () => {
     expect(result).toHaveLength(1);
     expect(result[0].status).toBe('silent');
     expect(result[0].detail).toContain('never reported');
+  });
+
+  it('reads the inventory with an RS256 bearer, not the shared static header', async () => {
+    const { watcher } = build();
+    inventory([principal()]);
+
+    await watcher.runCheck();
+
+    const [, cfg] = mockedAxios.get.mock.calls[0] as any[];
+    // The shared static string carries no identity, so a rejection could not be
+    // attributed and the credential could not be enumerated -- the watcher would
+    // be blind to its own credential. See the plan's Task E.
+    expect(cfg.headers.Authorization).toBe('Bearer test-token');
+    expect(cfg.headers['x-internal-service-token']).toBeUndefined();
   });
 
   it('reports an accepted verdict from the consumer', async () => {
@@ -180,9 +194,9 @@ describe('CredentialWatcher', () => {
     );
   });
 
-  it('refuses to sweep with an empty INTERNAL_SERVICE_TOKEN', async () => {
+  it('refuses to sweep with an empty AUTH_SERVICE_TOKEN', async () => {
     const { watcher, logging } = build();
-    process.env.INTERNAL_SERVICE_TOKEN = '';
+    process.env.AUTH_SERVICE_TOKEN = '';
 
     const result = await watcher.runCheck();
 
@@ -192,7 +206,7 @@ describe('CredentialWatcher', () => {
     expect(logging.log).toHaveBeenCalledWith(
       'error',
       'credential_watch_inventory_failed',
-      expect.objectContaining({ error: expect.stringContaining('INTERNAL_SERVICE_TOKEN is empty') }),
+      expect.objectContaining({ error: expect.stringContaining('AUTH_SERVICE_TOKEN is empty') }),
     );
   });
 });

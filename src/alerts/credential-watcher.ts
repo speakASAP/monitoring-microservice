@@ -149,16 +149,27 @@ export class CredentialWatcher {
     return reconciled;
   }
 
+  /**
+   * Reads the inventory using this service's OWN per-pair principal
+   * (`svc-monitoring-microservice--auth-microservice`, RS256).
+   *
+   * Deliberately not the shared `INTERNAL_SERVICE_TOKEN` static string. That
+   * credential carries no identity, so it can neither be enumerated nor
+   * attributed on rejection — the watcher would be observing the fleet with the
+   * one credential shape it cannot observe. With a real principal, this
+   * watcher's own credential appears in its own matrix and is probed like any
+   * other. See the plan's Task E.
+   */
   private async fetchInventory(): Promise<PrincipalRecord[]> {
-    const token = process.env.INTERNAL_SERVICE_TOKEN || '';
+    const token = process.env.AUTH_SERVICE_TOKEN || '';
     if (!token) {
-      throw new Error('INTERNAL_SERVICE_TOKEN is empty — cannot read the principal inventory');
+      throw new Error('AUTH_SERVICE_TOKEN is empty — cannot read the principal inventory');
     }
 
     const res = await axios.get(`${AUTH_INTERNAL_URL}/internal/service-principals`, {
       timeout: INVENTORY_TIMEOUT_MS,
       headers: {
-        'x-internal-service-token': token,
+        Authorization: `Bearer ${token}`,
         'x-service-name': 'monitoring-microservice',
       },
     });
