@@ -25,6 +25,7 @@ export class CredentialsController {
       verdict: dto.verdict,
       detail: dto.detail,
       status: dto.status,
+      expiresAt: dto.expiresAt,
     });
 
     return { recorded: true, principal: stored.principal, receivedAt: stored.receivedAt };
@@ -50,6 +51,9 @@ export class CredentialsController {
         indeterminate: reconciled.filter((r) => r.status === 'indeterminate').length,
         silent: reconciled.filter((r) => r.status === 'silent').length,
         stale: reconciled.filter((r) => r.status === 'stale').length,
+        // Orthogonal to the statuses above, not a sixth bucket: a credential can
+        // be both rejected and expiring, and both facts matter.
+        expiringSoon: reconciled.filter((r) => r.expiringSoon).length,
       },
       credentials: reconciled,
     };

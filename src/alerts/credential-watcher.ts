@@ -20,6 +20,16 @@ const INVENTORY_TIMEOUT_MS = Number(process.env.CREDENTIAL_INVENTORY_TIMEOUT_MS 
  */
 const REPORT_TTL_MINUTES = Number(process.env.CREDENTIAL_REPORT_TTL_MINUTES || 120);
 
+/**
+ * Days of remaining life at which a credential is called expiring.
+ *
+ * 14 against the 90-day lifetime of a per-pair principal, which leaves several
+ * rotation attempts before the credential actually stops working. Configurable
+ * because the fleet is not uniformly 90-day: the watcher's own credential was
+ * first issued at `provision-service-token.js`'s 30-day default.
+ */
+const EXPIRY_HORIZON_DAYS = Number(process.env.CREDENTIAL_EXPIRY_HORIZON_DAYS || 14);
+
 export type ProbeVerdict = 'accepted' | 'rejected' | 'indeterminate';
 
 export type ReconciledStatus = ProbeVerdict | 'silent' | 'stale';
@@ -39,6 +49,16 @@ export interface CredentialSelfReport {
   verdict: ProbeVerdict;
   detail?: string;
   status?: number;
+  /**
+   * The `exp` of the token the reporter actually presented, ISO-8601.
+   *
+   * Optional so reporters can adopt it without a second round of changes, and
+   * because auth cannot supply it: it stores principals, not issued tokens, and
+   * every role grant has `expiresAt IS NULL`. The reporter holds the token, so
+   * it is the only party that can read this — and what it reports is the
+   * credential genuinely deployed rather than one that was issued.
+   */
+  expiresAt?: string;
   receivedAt: Date;
 }
 
@@ -65,6 +85,20 @@ export interface ReconciledCredential {
   detail: string;
   target?: string | null;
   reportedAt?: Date;
+  /** Reported token expiry, when the reporter sent a parseable one. */
+  expiresAt?: string;
+  /** Whole days until expiry; negative once already expired. */
+  daysUntilExpiry?: number;
+  /**
+   * Within `EXPIRY_HORIZON_DAYS`, or already past.
+   *
+   * Deliberately a separate field from `status` rather than a sixth status
+   * value. Expiry ANNOTATES a verdict, it never replaces one: on 2026-08-18
+   * every token carried a far-future `exp` and none of them worked, so a
+   * healthy-looking expiry must never be able to soften a `rejected` row. False
+   * whenever no expiry was reported — an absent field is not an imminent one.
+   */
+  expiringSoon: boolean;
 }
 
 /**
@@ -113,6 +147,7 @@ export class CredentialWatcher {
       verdict: report.verdict,
       status: report.status ?? null,
       detail: report.detail ?? null,
+      expiresAt: report.expiresAt ?? null,
     });
 
     return stored;
@@ -186,8 +221,11 @@ export class CredentialWatcher {
         status: 'silent',
         detail:
           'principal exists in auth but has never reported — nothing is checking this credential',
+        expiringSoon: false,
       };
     }
+
+    const expiry = this.readExpiry(report.expiresAt);
 
     const ageMinutes = (Date.now() - report.receivedAt.getTime()) / 60000;
     if (ageMinutes > REPORT_TTL_MINUTES) {
@@ -197,6 +235,7 @@ export class CredentialWatcher {
         detail: `last report was ${Math.round(ageMinutes)}m ago, past the ${REPORT_TTL_MINUTES}m TTL`,
         target: report.target,
         reportedAt: report.receivedAt,
+        ...expiry,
       };
     }
 
@@ -206,6 +245,37 @@ export class CredentialWatcher {
       detail: report.detail ?? `reporter said ${report.verdict}`,
       target: report.target,
       reportedAt: report.receivedAt,
+      ...expiry,
+    };
+  }
+
+  /**
+   * Turns a reported `exp` into the row's expiry annotation.
+   *
+   * An unparseable or absent value yields `expiringSoon: false` and no day
+   * count, rather than throwing or defaulting to zero: a reporter sending
+   * nonsense must not be able to fail the sweep for every other principal, and
+   * "no expiry reported" is not "expires now". Phase 2 alerts on `expiringSoon`,
+   * so defaulting it true would fire on every reporter that has not yet adopted
+   * the optional field.
+   */
+  private readExpiry(raw?: string): Pick<
+    ReconciledCredential,
+    'expiresAt' | 'daysUntilExpiry' | 'expiringSoon'
+  > {
+    if (!raw) return { expiringSoon: false };
+
+    const at = new Date(raw);
+    if (Number.isNaN(at.getTime())) return { expiringSoon: false };
+
+    // Rounded, so a token 9 days and 3 hours out reads as 9 rather than 9.13.
+    // Negative once expired, which keeps "how long ago" legible in the matrix.
+    const days = Math.round((at.getTime() - Date.now()) / 86400_000);
+
+    return {
+      expiresAt: at.toISOString(),
+      daysUntilExpiry: days,
+      expiringSoon: days <= EXPIRY_HORIZON_DAYS,
     };
   }
 
@@ -222,6 +292,9 @@ export class CredentialWatcher {
       indeterminate: tally('indeterminate'),
       silent: tally('silent'),
       stale: tally('stale'),
+      // Counted across every status, not only accepted ones: a rejected
+      // credential that is also about to expire is worth seeing as both.
+      expiringSoon: reconciled.filter((r) => r.expiringSoon).length,
     };
 
     // Verdicts posted for principals auth does not list: a reporter using a
@@ -235,7 +308,11 @@ export class CredentialWatcher {
     this.logger.log(
       `[CredentialWatcher] ${summary.total} principal(s): ${summary.accepted} accepted, ` +
         `${summary.rejected} rejected, ${summary.indeterminate} indeterminate, ` +
-        `${summary.silent} silent, ${summary.stale} stale`,
+        `${summary.silent} silent, ${summary.stale} stale` +
+        // Appended only when nonzero: today every reporter predates the optional
+        // expiresAt field, so a constant "0 expiring" would be noise on a line
+        // read at a glance.
+        (summary.expiringSoon > 0 ? `, ${summary.expiringSoon} expiring soon` : ''),
     );
 
     await this.logging.log('info', 'credential_watch_sweep', {
@@ -243,6 +320,9 @@ export class CredentialWatcher {
       rejectedPrincipals: reconciled.filter((r) => r.status === 'rejected').map((r) => r.principal),
       silentPrincipals: reconciled.filter((r) => r.status === 'silent').map((r) => r.principal),
       stalePrincipals: reconciled.filter((r) => r.status === 'stale').map((r) => r.principal),
+      expiringPrincipals: reconciled
+        .filter((r) => r.expiringSoon)
+        .map((r) => `${r.principal} (${r.daysUntilExpiry}d)`),
       unknownReporters,
       offConvention: principals.filter((p) => !p.onConvention).length,
       targetMismatch: principals.filter((p) => p.targetMismatch).length,

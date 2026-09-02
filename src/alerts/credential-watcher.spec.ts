@@ -209,4 +209,129 @@ describe('CredentialWatcher', () => {
       expect.objectContaining({ error: expect.stringContaining('AUTH_SERVICE_TOKEN is empty') }),
     );
   });
+
+  /**
+   * Task D — the expiry horizon.
+   *
+   * auth cannot supply `exp`: it stores principals, not issued tokens, and every
+   * role grant has `expiresAt IS NULL`. The reporter already holds its own
+   * token, so it decodes `exp` and sends it. That makes the reported expiry
+   * describe the credential genuinely deployed rather than one that was issued.
+   *
+   * `exp` stays SECONDARY to the verdict throughout. On 2026-08-18 every token
+   * carried a far-future `exp` and none of them worked, so an expiry check must
+   * never be able to call a rejected credential healthy.
+   */
+  describe('expiry horizon', () => {
+    const inDays = (n: number) => new Date(Date.now() + n * 86400_000).toISOString();
+
+    const report = (watcher: any, over: any = {}) =>
+      watcher.recordSelfReport({
+        principal: 'svc-monitoring--logging@internal.alfares.cz',
+        target: 'logging-microservice',
+        verdict: 'accepted',
+        ...over,
+      });
+
+    it('surfaces a reported expiry on the reconciled row', async () => {
+      const { watcher } = build();
+      inventory([principal()]);
+      await report(watcher, { expiresAt: inDays(60) });
+
+      const [row] = await watcher.runCheck();
+
+      expect(row.status).toBe('accepted');
+      expect(row.expiresAt).toBeDefined();
+      expect(row.expiringSoon).toBe(false);
+    });
+
+    it('flags a credential inside the 14-day horizon', async () => {
+      const { watcher } = build();
+      inventory([principal()]);
+      await report(watcher, { expiresAt: inDays(9) });
+
+      const [row] = await watcher.runCheck();
+
+      expect(row.expiringSoon).toBe(true);
+      expect(row.daysUntilExpiry).toBe(9);
+    });
+
+    it('does not flag a credential outside the horizon', async () => {
+      const { watcher } = build();
+      inventory([principal()]);
+      await report(watcher, { expiresAt: inDays(15) });
+
+      const [row] = await watcher.runCheck();
+
+      expect(row.expiringSoon).toBe(false);
+    });
+
+    it('treats an already-expired credential as expiring, with a negative day count', async () => {
+      const { watcher } = build();
+      inventory([principal()]);
+      await report(watcher, { expiresAt: inDays(-3) });
+
+      const [row] = await watcher.runCheck();
+
+      expect(row.expiringSoon).toBe(true);
+      expect(row.daysUntilExpiry).toBe(-3);
+    });
+
+    it('keeps a rejected verdict rejected even when the expiry looks healthy', async () => {
+      const { watcher } = build();
+      inventory([principal()]);
+      await report(watcher, { verdict: 'rejected', expiresAt: inDays(80) });
+
+      const [row] = await watcher.runCheck();
+
+      // 2026-08-18 in one assertion: a far-future exp on a credential no
+      // verifier accepts. The probe verdict is the signal; exp only annotates.
+      expect(row.status).toBe('rejected');
+      expect(row.expiringSoon).toBe(false);
+    });
+
+    it('omits expiry fields when the reporter does not send one', async () => {
+      const { watcher } = build();
+      inventory([principal()]);
+      await report(watcher);
+
+      const [row] = await watcher.runCheck();
+
+      // The field is optional so reporters can adopt it without a second round
+      // of changes; its absence must not read as "expires now".
+      expect(row.status).toBe('accepted');
+      expect(row.expiresAt).toBeUndefined();
+      expect(row.expiringSoon).toBe(false);
+      expect(row.daysUntilExpiry).toBeUndefined();
+    });
+
+    it('ignores an unparseable expiry rather than failing the sweep', async () => {
+      const { watcher } = build();
+      inventory([principal()]);
+      await report(watcher, { expiresAt: 'not-a-date' });
+
+      const [row] = await watcher.runCheck();
+
+      expect(row.status).toBe('accepted');
+      expect(row.expiringSoon).toBe(false);
+      expect(row.daysUntilExpiry).toBeUndefined();
+    });
+
+    it('counts expiring credentials in the sweep summary', async () => {
+      const { watcher, logging } = build();
+      inventory([principal(), principal({ id: 'u2', email: 'svc-a--b@internal.alfares.cz' })]);
+      await report(watcher, { expiresAt: inDays(5) });
+
+      await watcher.runCheck();
+
+      expect(logging.log).toHaveBeenCalledWith(
+        'info',
+        'credential_watch_sweep',
+        expect.objectContaining({
+          expiringSoon: 1,
+          expiringPrincipals: ['svc-monitoring--logging@internal.alfares.cz (5d)'],
+        }),
+      );
+    });
+  });
 });
