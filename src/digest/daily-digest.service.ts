@@ -44,8 +44,11 @@ export class DailyDigestService {
       const yesterdaySnapshot = await this.snapshotRepo.findOne({
         where: { snapshotDate: yesterdayKey },
       });
-
-      const diff = computeDiff(todayEntries, yesterdaySnapshot?.services ?? null);
+      const previousServices = yesterdaySnapshot?.services ?? null;
+      const diff = computeDiff(
+        todayEntries,
+        previousServices && previousServices.length > 0 ? previousServices : null,
+      );
       const message = formatDigestMessage(todayEntries, diff, todayKey);
 
       await this.snapshotRepo.upsert(

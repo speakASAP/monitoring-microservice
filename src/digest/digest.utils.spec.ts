@@ -39,6 +39,11 @@ describe('computeDiff', () => {
     const today = [healthy('svc-a'), failing('svc-b')];
     expect(computeDiff(today, null)).toBeNull();
   });
+
+  it('treats an empty previous snapshot as an initial run', () => {
+    const today = [healthy('svc-a'), failing('svc-b')];
+    expect(computeDiff(today, [])).toBeNull();
+  });
 });
 
 describe('formatDigestMessage', () => {

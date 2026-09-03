@@ -28,11 +28,15 @@ export interface DigestDiff {
   stillFailing: SnapshotServiceEntry[];
 }
 
+function sortByName(a: SnapshotServiceEntry, b: SnapshotServiceEntry): number {
+  return a.name.localeCompare(b.name);
+}
+
 export function computeDiff(
   today: SnapshotServiceEntry[],
   yesterday: SnapshotServiceEntry[] | null,
 ): DigestDiff | null {
-  if (!yesterday) return null;
+  if (!yesterday || yesterday.length === 0) return null;
 
   const yesterdayMap = new Map(yesterday.map((s) => [s.name, s]));
 
@@ -40,7 +44,7 @@ export function computeDiff(
   const recovered: SnapshotServiceEntry[] = [];
   const stillFailing: SnapshotServiceEntry[] = [];
 
-  for (const svc of today) {
+  for (const svc of [...today].sort(sortByName)) {
     const prev = yesterdayMap.get(svc.name);
     if (!prev) continue;
     if (!svc.healthy && prev.healthy) newlyFailing.push(svc);
@@ -48,7 +52,11 @@ export function computeDiff(
     else if (!svc.healthy && !prev.healthy) stillFailing.push(svc);
   }
 
-  return { newlyFailing, recovered, stillFailing };
+  return {
+    newlyFailing: newlyFailing.sort(sortByName),
+    recovered: recovered.sort(sortByName),
+    stillFailing: stillFailing.sort(sortByName),
+  };
 }
 
 export function formatDigestMessage(
