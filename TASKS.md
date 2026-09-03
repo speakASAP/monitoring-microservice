@@ -4,7 +4,7 @@
 
 ## Active
 
-### Daily digest not delivered since 2026-08-25 - ROOT CAUSE FOUND (2026-09-03)
+### Daily digest not delivered since 2026-08-25 - FIXED AND VERIFIED (2026-09-03)
 
 **The bug is in notifications-microservice, not in monitoring-microservice.**
 
@@ -35,7 +35,19 @@ was reported as `status: "sent"`.
 - The absent `NotificationsController` log line at 08:00 proved nothing: a *successful* probe
   produced no such line either, because `logger.log` is below the pod's active log level.
 
-**Proposed fix - owner decision needed, changes ecosystem-wide semantics.**
+**FIXED** in notifications-microservice `b1992cd` (owner approved the content-hash approach).
+A duplicate must now also carry identical message content and the same `service`; a shape
+collision with differing content is logged as a WARN and delivered.
+
+Verified against the deployed pod (2026-09-03 15:12 UTC, pod `...-6d6cb56c89-nxnpf`):
+two messages sharing the digest shape but differing in content produced distinct ids and
+distinct Telegram message ids 2856 / 2857, while an identical resend still collapsed onto
+its predecessor. Typecheck clean, 17/17 notifications unit tests pass.
+
+Open item: one probe against the *old* pod returned HTTP 500 and was not explained before
+that pod was replaced. Not reproduced since the fix. Worth a look if 500s recur.
+
+Superseded proposal, kept for context:
 Narrow the dedup key so it means idempotency (an identical retry) rather than "same shape":
 add the message body or its hash, plus `service`, to the match, and log a WARN when a
 same-key/different-content notification is let through. This affects every caller of
