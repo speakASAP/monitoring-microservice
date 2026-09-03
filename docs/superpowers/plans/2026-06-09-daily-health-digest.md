@@ -1,10 +1,22 @@
 ---
 status: review
 owner: repository-owner
-last_updated: 2026-09-02
+last_updated: 2026-09-03
 ---
 
-<!-- [MISSING: end-to-end production evidence for the cron-delivered Telegram message, applied database migration, and live deployment was not independently verified. Digest implementation is present and its focused Jest suite passed 14/14, so this is genuine partial/operational review rather than abandoned.] -->
+<!-- [MISSING: Telegram delivery is broken in production and the cause is not yet identified.
+     Verified 2026-09-03, so this is no longer "unverified" - two of the three original gaps are
+     now closed and the third is a confirmed regression:
+       - applied database migration: CONFIRMED. monitoring.service_health_snapshots exists and is
+         written daily, most recently 2026-09-03 08:00:00 UTC with 52 services.
+       - live deployment: CONFIRMED. monitoring-microservice is Running in statex-apps, the digest
+         is scheduled in-process via @Cron (there is no k8s CronJob, so its absence is not a
+         defect), and DAILY_DIGEST_ENABLED=true with DAILY_DIGEST_CRON="0 8 * * *" in the pod.
+       - cron-delivered Telegram message: FAILING. 59 digests were delivered between 2026-06-09
+         and 2026-08-25 08:00 and none since, while snapshots continue daily. No error is logged
+         and no notification row is written, so the send resolves without delivering.
+     This plan stays non-terminal because that regression is real and unfixed, not because
+     evidence is missing. Tracked as the active task in TASKS.md.] -->
 
 # Daily Health Digest Implementation Plan
 

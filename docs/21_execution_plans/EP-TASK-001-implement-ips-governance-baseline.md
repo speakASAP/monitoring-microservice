@@ -2,11 +2,11 @@
 
 ```yaml
 id: EP-TASK-001
-status: implemented
+status: done
 source_task: ../11_tasks/TASK-001-implement-ips-governance-baseline.md
 owner: Operations Lead
 created: 2026-06-13
-last_updated: 2026-06-13
+last_updated: 2026-09-03
 completeness_level: complete
 vision: ../01_vision/VISION.md
 constitution: ../00_constitution/CONSTITUTION.md
@@ -22,7 +22,7 @@ related_adrs:
 
 ## Metadata
 
-Owner: Operations Lead. Lifecycle state: implemented. Source task: `TASK-001`.
+Owner: Operations Lead. Lifecycle state: done. Source task: `TASK-001`.
 
 ## Upstream Traceability
 
@@ -134,3 +134,17 @@ Implement future monitoring-microservice changes only after reading `AGENTS.md`,
 - [x] Validation evidence collected
 - [x] Documentation updated
 - [x] Deviations documented
+
+## Verification evidence (2026-09-03)
+
+Closed after checking the artifacts rather than trusting the `implemented` label:
+
+- Downstream validation report `../12_validation/VAL-TASK-001-ips-governance-baseline.md` carries
+  `status: validated`.
+- The plan contains no unresolved `MISSING:` or `UNKNOWN:` markers and no unticked steps.
+- `completeness_level` is `complete`.
+- This file is **not** the validator-governed `bootstrapExecutionPlan`. `ips-adoption.json` names
+  `docs/21_execution_plans/EP-TASK-001-bootstrap-service.md` (status `closed`), which is a
+  different file sharing the `EP-TASK-001` prefix and was not modified. Per
+  `shared/docs/PLANNING_STATUS_VOCABULARY.md` the IPS carve-out therefore does not apply here and
+  `done` is the correct terminal value.
