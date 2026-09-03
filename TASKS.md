@@ -64,6 +64,23 @@ silent: nothing is logged and no notification row is created.
 
 ## Ready next
 
+- **OPEN: a second, unexplained digest failure mode.** The dedup fix (see Active) is real and
+  verified, but a sweep on 2026-09-03 showed it explains only **3 of the 9** recent missing
+  digests - 08-27, 08-29 and 09-01, the days with a null-subject monitoring alert inside the
+  5-minute window. On **08-28, 08-30, 08-31, 09-02 and 09-03** the nearest same-shape message
+  was 10-30 minutes away, so dedup cannot have been the cause, yet no notification row exists.
+  On 09-03 the request provably reached notifications (JwtRolesGuard WARN at 08:00:00) and the
+  snapshot was written at 08:00:00.2, so `runDigest()` ran and called out. Something between the
+  controller entry and row creation is discarding it without an error.
+  Hypotheses NOT yet eliminated: an intermittent 500 on `/notifications/send` (one probe returned
+  HTTP 500 on 2026-09-03 and was never explained); an exception inside `send()` before the insert.
+  Ruled OUT by measurement: missing token, message length (4140 chars delivered fine, id 2858),
+  channel-policy rejection (it throws rather than dropping).
+  **Decisive observation is the 08:00 digest on 2026-09-04** - it now runs with the dedup fix and
+  the new shape-collision WARN in place. If it is still missing, the second mode is confirmed
+  and dedup was never the main cause.
+
+
 - **Owner decision (blocking): narrow the notifications dedup key.** Root cause of the digest
   outage is `notifications-microservice/src/notifications/notifications.service.ts:139-176`.
   See the Active section for the evidence. The fix changes behaviour for every caller of
