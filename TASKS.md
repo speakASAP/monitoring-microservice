@@ -4,6 +4,47 @@
 
 ## Active
 
+### Daily digest not delivered since 2026-08-25 - ROOT CAUSE FOUND (2026-09-03)
+
+**The bug is in notifications-microservice, not in monitoring-microservice.**
+
+`notifications.service.ts:139-176` suppresses a notification when an earlier row matches
+`(channel, recipient, subject, type)` with status SENT/PENDING inside a 5-minute window.
+The message body is deliberately excluded from the key ("to catch duplicates even if message
+content varies slightly"). On a hit it returns `{status: 'sent', messageId: <the OTHER message's id>}`
+with HTTP 201, so the caller cannot tell its notification was dropped.
+
+The digest sends `channel=telegram, recipient=<owner chat>, subject=null, type=custom`.
+Every operational alert uses those same four values. Any alert to the owner chat in the five
+minutes before 08:00 therefore silently swallows the digest.
+
+Evidence (notifications DB, 07:50-08:06 window):
+- Through 08-25 the Monitoring digest and the Orchestrator Morning Digest both sent at 08:00;
+  they never collided because the Orchestrator sets a non-null `subject`.
+- 08-27 07:58:15 `RESOLVED: kube-state-metrics` (subject null) -> 08:00 digest absent.
+- 08-29 07:55:00 `STILL FAILING: orders-microservice` (subject null) -> 08:00 digest absent.
+- No Monitoring digest row exists on any date after 08-25.
+
+Reproduced live 2026-09-03 14:36: two probes with different message bodies returned the
+identical `id` 05c8bb40-... and Telegram `messageId` 2854. The second was never delivered, yet
+was reported as `status: "sent"`.
+
+**Corrections to earlier notes below** (both were measurement errors, not facts):
+- `NOTIFICATION_SERVICE_TOKEN` IS set in the monitoring pod. The earlier "unset" claim came from
+  a grep pattern that only matched the plural `NOTIFICATIONS_*` prefix.
+- The absent `NotificationsController` log line at 08:00 proved nothing: a *successful* probe
+  produced no such line either, because `logger.log` is below the pod's active log level.
+
+**Proposed fix - owner decision needed, changes ecosystem-wide semantics.**
+Narrow the dedup key so it means idempotency (an identical retry) rather than "same shape":
+add the message body or its hash, plus `service`, to the match, and log a WARN when a
+same-key/different-content notification is let through. This affects every caller of
+notifications-microservice, so it is not being changed unilaterally.
+
+**Do not** treat a fresh `daily_digest_snapshot` row as proof of delivery: `runDigest()` upserts
+the snapshot before calling `sendTelegram`.
+
+
 Restore daily health digest delivery. The 08:00 UTC job still runs and still writes its
 snapshot every day, but no digest has reached Telegram since 2026-08-25 and the failure is
 silent: nothing is logged and no notification row is created.
