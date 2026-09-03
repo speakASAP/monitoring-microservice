@@ -52,23 +52,13 @@ silent: nothing is logged and no notification row is created.
 
 ## Ready next
 
-- **Diagnose why `sendTelegram` neither delivers nor raises.** Evidence gathered 2026-09-03:
-  `monitoring.service_health_snapshots` has a row for every day through 2026-09-03 08:00:00 UTC
-  (52 services), so `runDigest()` reaches its upsert. The `notifications` database contains 59
-  digest messages matching `Monitoring Daily Digest`, first 2026-06-09, **last 2026-08-25 08:00**,
-  and none since. In the 3027 pod log lines from 07:59 onward on 2026-09-03 there is no `ERROR`,
-  no `WARN` and no `digest` line, so the `catch` in `runDigest()` never fired. Delivery therefore
-  resolves successfully while nothing is persisted or sent. Same-process alerting is unaffected -
-  `health-watcher` delivered through the identical `NotificationsClient` at 05:52 on 2026-09-03 -
-  so the client, the chat id and the notifications service are all reachable. Two leads not yet
-  eliminated: `NOTIFICATION_SERVICE_TOKEN` is **unset** in the live pod, so digests post without an
-  `Authorization` header; and the digest payload is far larger than an alert, near Telegram's
-  4096-character limit. Note 2026-08-26 has no snapshot row at all, so that day's run failed
-  earlier than the others and may be where this started.
+- **Owner decision (blocking): narrow the notifications dedup key.** Root cause of the digest
+  outage is `notifications-microservice/src/notifications/notifications.service.ts:139-176`.
+  See the Active section for the evidence. The fix changes behaviour for every caller of
+  notifications-microservice, so it needs an owner call before implementation.
 - Owner decision, still open and unchanged: choose one implementation or operations lane -
   target inventory reconciliation, alert and health-check noise reduction, dashboard validation,
   or deployment-readiness verification.
-
 
 ## Blocked
 
