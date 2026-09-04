@@ -4,22 +4,22 @@
   "service": {
     "name": "monitoring-microservice",
     "kind": "infrastructure",
-    "lifecycle": "production",
+    "lifecycle": "active",
     "deployment": "kubernetes"
   },
   "planning": {
-    "status": "ready",
+    "status": "done",
     "active_goal_ids": [],
     "next_ready_goal_ids": [],
     "blocked_goal_ids": [],
     "active_workstream_ids": [],
-    "last_updated_at": "2026-09-04T13:30:00.000+02:00"
+    "last_updated_at": "2026-09-04T13:45:00.000+02:00"
   },
   "delivery": {
     "last_validation_id": "VAL-REPO-PLANNING-STANDARDIZATION-2026-08-30",
     "last_validation_status": "validated",
     "validation_debt_count": 0,
-    "last_deployment_commit": null
+    "last_deployment_commit": "7d256e2"
   },
   "collection": {
     "profile": "ips-full",

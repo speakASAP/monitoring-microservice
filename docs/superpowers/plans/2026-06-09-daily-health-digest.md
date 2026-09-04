@@ -1,22 +1,27 @@
 ---
-status: review
+status: done
 owner: repository-owner
-last_updated: 2026-09-03
+last_updated: 2026-09-04
 ---
 
-<!-- [MISSING: Telegram delivery is broken in production and the cause is not yet identified.
-     Verified 2026-09-03, so this is no longer "unverified" - two of the three original gaps are
-     now closed and the third is a confirmed regression:
+<!-- Delivered and evidenced. The regression this plan was held open for is resolved:
+     the daily digest reached Telegram again on 2026-09-04 08:00:00.789 UTC
+     (notifications row 303b798b-5e70-46ba-b206-5af8ce26a859, messageId 2863) after
+     nine missing days, 2026-08-26 -> 2026-09-03.
        - applied database migration: CONFIRMED. monitoring.service_health_snapshots exists and is
-         written daily, most recently 2026-09-03 08:00:00 UTC with 52 services.
+         written daily.
        - live deployment: CONFIRMED. monitoring-microservice is Running in statex-apps, the digest
          is scheduled in-process via @Cron (there is no k8s CronJob, so its absence is not a
          defect), and DAILY_DIGEST_ENABLED=true with DAILY_DIGEST_CRON="0 8 * * *" in the pod.
-       - cron-delivered Telegram message: FAILING. 59 digests were delivered between 2026-06-09
-         and 2026-08-25 08:00 and none since, while snapshots continue daily. No error is logged
-         and no notification row is written, so the send resolves without delivering.
-     This plan stays non-terminal because that regression is real and unfixed, not because
-     evidence is missing. Tracked as the active task in TASKS.md.] -->
+       - cron-delivered Telegram message: CONFIRMED 2026-09-04, messageId 2863.
+     Delivery was restored by notifications-microservice b1992cd (dedup key now requires
+     identical content and service). Three follow-on defects found while diagnosing it are
+     fixed here: e73f64f escalates a failed digest out of band instead of swallowing it,
+     50bd870 authenticates log ingest, 7d256e2 nests log extras under `metadata` so
+     forbidNonWhitelisted stops rejecting every structured event.
+     The unchecked boxes below are the original build steps, kept as the historical record of
+     a plan that shipped; see TASKS.md for the outstanding follow-ups, which are separate
+     items and do not hold this plan open. -->
 
 # Daily Health Digest Implementation Plan
 
