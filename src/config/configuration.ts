@@ -18,7 +18,10 @@ export default () => ({
       process.env.MONITORING_OPERATOR_ROLES ||
       'internal:monitoring-microservice:operator,app:monitoring-microservice:operator',
   },
-  logging: { url: process.env.LOGGING_SERVICE_URL || 'http://logging-microservice:3367' },
+  logging: {
+    url: process.env.LOGGING_SERVICE_URL || 'http://logging-microservice:3367',
+    token: process.env.LOGGING_SERVICE_TOKEN,
+  },
   notifications: { url: process.env.NOTIFICATION_SERVICE_URL || 'http://notifications-microservice:3368' },
   prometheus: { url: process.env.PROMETHEUS_URL || 'http://prometheus:9090' },
   grafana: { url: process.env.GRAFANA_URL || 'http://grafana:3000' },

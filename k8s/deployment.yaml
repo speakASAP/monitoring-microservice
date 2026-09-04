@@ -36,6 +36,18 @@ spec:
                 name: monitoring-microservice-config
             - secretRef:
                 name: monitoring-microservice-secret
+          env:
+            # The log ingest endpoint rejects unauthenticated posts with 401, and
+            # LoggingService swallows that rejection, so a missing token silently
+            # erases this service from the log index (it had zero rows for
+            # 2026-08-25..09-04). This reference existed only on the live object
+            # and in no manifest, so any full apply from git would have dropped it
+            # and re-broken logging invisibly. Keep it here.
+            - name: LOGGING_SERVICE_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: logging-ingest-credentials
+                  key: LOGGING_SERVICE_TOKEN
           startupProbe:
             httpGet:
               path: /health
