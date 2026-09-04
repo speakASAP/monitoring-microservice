@@ -13,6 +13,47 @@ implementation question and needs a goal id before work starts.
 
 ## Ready next
 
+- **DONE 2026-09-04: flap damping and repeat backoff shipped (`284c9b8`, deployed as
+  `monitoring-microservice:284c9b8`).** First delivery in the noise-reduction lane. Measured
+  cause: owner-chat volume ran at 46/144/71/105/52/104 msgs/day against a ~6/day baseline, and
+  kube-state-metrics alone produced 154 of those messages (60 ALERT, 44 RESOLVED, 50 STILL
+  FAILING) all describing one continuous problem. Two independent defects, both fixed:
+  1. *No flap damping.* 26 `resolved -> fired` transitions, 22 inside ten minutes (mean 429s),
+     each sending a ✅ then a fresh 🚨 for a service whose real state never changed. A resolve now
+     only *owes* the ✅; `AlertSweeper` pays it after `ALERT_FLAP_WINDOW_MINUTES` (10) of quiet,
+     and a re-fire inside the window reopens the same row silently.
+  2. *Repeat on every tick.* `HealthWatcher` runs every 5 min and notified on all of them - the
+     300s floor seen between the 72 STILL FAILING messages. `lastNotifiedAt` now drives an
+     escalating backoff (15m/30m/1h/2h/4h capped), taking a day-long outage from 288 messages
+     to 8.
+
+  Verified live against the deployed pod, not just in tests: fire -> resolve -> re-fire returned
+  `notified:true`, then `recoveryDeferred:true`, then `transition:"reopened"` with `flapCount:1`
+  on the *same* row id, and produced exactly **one** telegram (messageId 2870) where the old code
+  sent three. The deferred recovery was then delivered by the sweeper on a minute tick (messageId
+  2871) and its `pendingResolveSince` cleared, confirming exactly-once delivery. Test row deleted
+  afterwards; 0 recoveries owed.
+
+  Schema `scripts/migrate-alert-flap-damping.sql` applied to production *before* the deploy
+  (`synchronize` is false), backfilling `lastNotifiedAt` across 327,486 rows so the backoff does
+  not treat pre-existing alerts as never-notified and restate them all at once.
+
+  Validation: typecheck, lint, build clean; 14 suites / 112 tests pass (66 in `src/alerts`, up
+  from 50).
+
+  Two design traps handled explicitly, both worth preserving:
+  - Stale expiry must stay silent, so `resolveByFingerprint` takes `{ silent: true }`. Without it
+    the sweeper would have turned a 236-row expiry sweep into 236 ✅ messages.
+  - `pendingResolveSince` is cleared only after a *confirmed* send, so a failed delivery retries
+    next sweep instead of silently losing the recovery.
+
+- **Next in this lane: the flapping target itself.** Damping makes the channel readable but does
+  not fix kube-state-metrics, which is what is actually unstable. `flapCount` is now surfaced in
+  the repeat and resolve messages specifically so that target stays visible once its cycles stop
+  producing traffic. Worth checking whether the `PodNotReady`/`PodCrashLooping` alerts against it
+  reflect a real recurring fault or a probe/threshold that is too tight.
+
+
 - **Sweep other `/api/logs` callers for the same payload defect.** The bug fixed here in
   `7d256e2` is not monitoring-specific in nature: any service that spreads context fields across
   the top level of its log payload gets a 400 from `forbidNonWhitelisted` and, if it swallows
