@@ -8,18 +8,20 @@
     "deployment": "kubernetes"
   },
   "planning": {
-    "status": "done",
-    "active_goal_ids": [],
+    "status": "active",
+    "active_goal_ids": [
+      "GOAL-IMPACT-TASK-005"
+    ],
     "next_ready_goal_ids": [],
     "blocked_goal_ids": [],
     "active_workstream_ids": [],
-    "last_updated_at": "2026-09-04T13:45:00.000+02:00"
+    "last_updated_at": "2026-09-04T14:05:00.000+02:00"
   },
   "delivery": {
     "last_validation_id": "VAL-REPO-PLANNING-STANDARDIZATION-2026-08-30",
     "last_validation_status": "validated",
     "validation_debt_count": 0,
-    "last_deployment_commit": "7d256e2"
+    "last_deployment_commit": "284c9b8"
   },
   "collection": {
     "profile": "ips-full",

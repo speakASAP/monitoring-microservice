@@ -3,12 +3,14 @@
 # Tasks: monitoring-microservice
 ## Active
 
-No active task. The daily digest outage is resolved and its plan is closed
-(`docs/superpowers/plans/2026-06-09-daily-health-digest.md`, status `done`).
+**Lane in progress: alert and health-check noise reduction** - `GOAL-IMPACT-TASK-005`
+(owner decision 2026-09-04, `docs/22_goal_impact/GOAL-IMPACT-TASK-005.md`).
+Its first delivery shipped the same day - flap damping and repeat backoff, `284c9b8`, deployed
+and verified live (see Ready next). The lane is not finished: the next step is the flapping
+target itself, kube-state-metrics.
 
-The chosen lane for the next implementation goal is **alert and health-check noise reduction**
-(owner decision 2026-09-04, recorded under Completed). Target coverage inside that lane is an
-implementation question and needs a goal id before work starts.
+The daily digest outage that preceded this lane is resolved and its plan is closed
+(`docs/superpowers/plans/2026-06-09-daily-health-digest.md`, status `done`).
 
 
 ## Ready next
@@ -61,13 +63,6 @@ implementation question and needs a goal id before work starts.
   the callers and checking which ones nest under `metadata`. Cheap to check, and this instance
   cost eleven days of un-diagnosable outage.
 
-
-- **Reduce alert and health-check noise (chosen lane, needs a goal id before work starts).**
-  The kube-state-metrics flapping storm of 2026-08-26 -> 09-01 drove owner-chat telegram volume
-  from ~6 msgs/day to 46/144/71/105/52/104. That noise is what let a nine-day digest outage pass
-  unnoticed, so reducing it is a prerequisite for the owner chat being a trustworthy signal.
-  Scope is not yet defined; define it and record a goal id in `STATE.json.planning` before
-  starting.
 
 
 ## Blocked
