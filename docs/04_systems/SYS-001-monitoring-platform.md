@@ -26,7 +26,7 @@ Provide centralized observability for the Statex ecosystem through an API, dashb
 
 - Serve health, service-status, registry, alert, digest, and webhook APIs.
 - Provide a browser dashboard deployed as `monitoring-web`.
-- Operate Prometheus, Grafana, Loki, Alertmanager, exporters, and Kubernetes manifests.
+- Operate the health sweep, the alert lifecycle, and this service's Kubernetes manifests.
 - Keep registry and probe configuration aligned.
 - Preserve operational deployment rules documented in `SYSTEM.md` and `AGENTS.md`.
 
@@ -34,13 +34,13 @@ Provide centralized observability for the Statex ecosystem through an API, dashb
 
 - Owning business-domain data for monitored services.
 - Acting as the authentication provider.
-- Replacing Grafana or Prometheus native functions.
+- Metrics collection, time-series storage, or dashboard visualization.
 
 ## Inputs
 
 - Service registry entries.
 - Health probe responses from ecosystem services.
-- Alertmanager webhook payloads.
+- Health-endpoint responses from registered services.
 - PostgreSQL configuration for alert and snapshot persistence.
 - Kubernetes manifests and deployment environment variables.
 
@@ -51,14 +51,14 @@ Provide centralized observability for the Statex ecosystem through an API, dashb
 - `GET api/services/list` registry view.
 - `GET api/alerts` alert data.
 - Dashboard UI at `monitoring.alfares.cz`.
-- Monitoring stack services including Grafana at `grafana.alfares.cz`.
+- The monitoring API and dashboard at `monitoring.alfares.cz`.
 
 ## Dependencies
 
 - PostgreSQL through `DB_*` settings.
 - Kubernetes namespace `statex-apps`.
 - Auth, logging, and notifications services for ecosystem integration.
-- Prometheus, Grafana, Loki, Alertmanager, blackbox exporter, node exporter, and kube-state-metrics.
+- Retired 2026-08-27: Prometheus, Grafana, Loki, Alertmanager and the exporters. See `../05_subsystems/SUB-003-observability-stack.md`.
 
 ## Upstream Traceability
 

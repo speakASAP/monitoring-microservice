@@ -10,7 +10,7 @@ Confirm traceability, approved intent, relevant invariants, allowed files, integ
 
 ## Parallel Work
 
-Do not concurrently modify the registry, Prometheus configuration, deployment files, public contracts, or state artifacts without one integration owner and a documented merge order.
+Do not concurrently modify the registry, deployment files, public contracts, or state artifacts without one integration owner and a documented merge order.
 
 ## Validation Debt
 
@@ -22,4 +22,4 @@ Record completed work, validation evidence, blockers, changed contracts, and nex
 
 ## Project-Specific Operations
 
-Synchronize `src/config/ecosystem-services.ts` with `k8s/prometheus/configmap-config.yaml`, rebuild through approved deployment flow, and reload Prometheus configuration rather than restart it.
+`src/config/ecosystem-services.ts` is the only registry; change it and rebuild through the approved deployment flow.

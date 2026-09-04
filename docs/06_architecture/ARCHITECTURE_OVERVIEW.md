@@ -20,24 +20,23 @@ related_adrs:
 - NestJS API runs as `monitoring-microservice` on port `3395`.
 - Next.js dashboard runs as `monitoring-web` on port `3396`.
 - Ingress exposes the dashboard and routes browser `/api/*` requests to the API.
-- Prometheus, Grafana, Loki, Alertmanager, and exporters run in Kubernetes namespace `statex-apps`.
+- Alerts originate from the in-process health sweep and the deploy queue; no external telemetry stack is deployed (retired 2026-08-27).
 - PostgreSQL stores alert and health snapshot data.
 
 ## Configuration Architecture
 
 - Service registry source: `src/config/ecosystem-services.ts`.
-- Prometheus blackbox probe targets: `k8s/prometheus/configmap-config.yaml`.
+- Monitored service registry: `src/config/ecosystem-services.ts`.
 - Secrets enter through ESO from Vault path `secret/prod/monitoring-microservice` and must not be copied into docs.
 
 ## Deployment Architecture
 
-`./scripts/deploy.sh` builds and pushes API and web images, applies Kubernetes manifests, reloads Prometheus configuration, rolls out API and web deployments, and verifies health and registry responses.
+`./scripts/deploy.sh` builds and pushes API and web images, applies Kubernetes manifests, rolls out API and web deployments, and verifies health and registry responses.
 
 ## Operational Constraints
 
-- Do not rollout restart Prometheus for config-only changes.
 - Same-origin browser API routes must be preserved.
-- Registry and Prometheus target changes must be reviewed together.
+- Registry changes must be reviewed against the services actually running.
 
 ## Validation
 

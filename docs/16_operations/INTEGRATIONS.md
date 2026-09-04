@@ -16,7 +16,7 @@ related_adrs: []
 ## Runtime Integrations
 
 - PostgreSQL through `DB_*` settings for alerts and service health snapshots.
-- Alertmanager webhook at `/api/webhooks/alertmanager`.
+- Deploy-queue alert input at `/api/alerts`.
 - Notifications microservice for alert delivery.
 - Logging microservice for operational logs.
 - Auth microservice for future dashboard auth.

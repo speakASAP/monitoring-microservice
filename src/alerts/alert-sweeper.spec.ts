@@ -10,7 +10,7 @@ import { AlertSweeper } from './alert-sweeper';
 describe('AlertSweeper', () => {
   const alertRow = (over: any = {}) => ({
     id: 'a1',
-    service: 'kube-state-metrics',
+    service: 'catalog-microservice',
     alertname: 'PodNotReady',
     firedAt: new Date('2026-09-04T11:00:00Z'),
     resolvedAt: new Date('2026-09-04T11:45:00Z'),

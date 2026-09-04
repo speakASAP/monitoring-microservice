@@ -16,7 +16,7 @@ related_adrs: []
 
 ## Purpose
 
-Expose NestJS endpoints for health, service status, registry data, alerts, digest data, marathon monitoring, and Alertmanager webhooks.
+Expose NestJS endpoints for health, service status, registry data, alerts, digest data, and marathon monitoring.
 
 ## Parent System
 
@@ -33,7 +33,7 @@ Expose NestJS endpoints for health, service status, registry data, alerts, diges
 
 - HTTP API on port `3395`.
 - PostgreSQL through TypeORM.
-- Alertmanager webhook input at `POST api/webhooks/alertmanager`.
+- Alert input at `POST api/alerts` from the deploy queue, and internally from the health sweep.
 - Dashboard API calls via ingress `/api/*`.
 
 ## Inputs
@@ -55,7 +55,7 @@ Owns alert records and service health snapshots for monitoring purposes. Does no
 ## Failure Modes
 
 - Database unavailable.
-- Registry and Prometheus targets drift.
+- Registry entries drift from the services actually running.
 - Internal service health probes time out.
 - Webhook payload shape changes without validation.
 

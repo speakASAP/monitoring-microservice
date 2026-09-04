@@ -31,17 +31,17 @@ The service reduces operational ambiguity by keeping service registry, health ch
 ## Success Metrics
 
 - Health and registry endpoints remain available after deployment.
-- Service registry and Prometheus targets are synchronized for monitored services.
-- Alertmanager webhooks can be accepted by the API.
+- The service registry lists every monitored service with a reachable health endpoint.
+- Alerts can be raised by the health sweep and by the deploy queue.
 - Deployment script verifies expected health and registry behavior.
 
 ## Risks
 
-- Registry drift between API configuration and Prometheus targets.
+- Registry drift between API configuration and the services actually running.
 - Browser dashboard accidentally calling internal cluster URLs.
-- Restarting Prometheus instead of reloading config, causing PVC lock disruption.
+- Presenting coverage the service no longer has after an alert source is retired.
 - Sensitive operational data leaking into docs or validation reports.
 
 ## Source Evidence
 
-Derived from `SYSTEM.md`, `AGENTS.md`, `src/config/ecosystem-services.ts`, and `k8s/prometheus/configmap-config.yaml`.
+Derived from `SYSTEM.md`, `AGENTS.md`, and `src/config/ecosystem-services.ts`.

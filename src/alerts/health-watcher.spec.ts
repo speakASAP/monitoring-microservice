@@ -134,11 +134,11 @@ describe('HealthWatcher', () => {
   });
 
   it('expires alerts that have gone stale — nothing re-fired them', async () => {
-    // 2026-08-26: an I/O storm opened 238 alerts. Alertmanager sent resolves
-    // for them while monitoring was down, so they could never be closed and sat
-    // 'active' forever, poisoning the digest on every later message.
-    // Alertmanager re-fires anything still true every repeat_interval (4h), so
-    // an alert nobody has re-fired in far longer than that is over.
+    // 2026-08-26: an I/O storm opened 238 alerts. Their resolves arrived while
+    // monitoring was down, so they could never be closed and sat 'active'
+    // forever, poisoning the digest on every later message. Every source
+    // re-fires anything still true, so an alert nobody has re-fired in far
+    // longer than its source's interval is over.
     const { watcher, alerts, services } = build();
     services.getServicesStatus.mockResolvedValue([] as any);
     const stale = { id: 's1', service: 'gone', alertname: 'PodNotReady', fingerprint: 'fp-stale' };

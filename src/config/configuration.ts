@@ -23,9 +23,6 @@ export default () => ({
     token: process.env.LOGGING_SERVICE_TOKEN,
   },
   notifications: { url: process.env.NOTIFICATION_SERVICE_URL || 'http://notifications-microservice:3368' },
-  prometheus: { url: process.env.PROMETHEUS_URL || 'http://prometheus:9090' },
-  grafana: { url: process.env.GRAFANA_URL || 'http://grafana:3000' },
-  alertmanager: { url: process.env.ALERTMANAGER_URL || 'http://alertmanager:9093' },
   jwtSecret: process.env.JWT_SECRET || '',
   digest: {
     enabled: process.env.DAILY_DIGEST_ENABLED !== 'false',

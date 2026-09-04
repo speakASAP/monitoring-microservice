@@ -33,4 +33,4 @@ python3 scripts/deployment_readiness_gate.py --root .
 
 ## Deployment Rule
 
-Use `./scripts/deploy.sh` for production deployment. Do not manually rollout restart Prometheus for config-only changes; reload Prometheus configuration instead.
+Use `./scripts/deploy.sh` for production deployment.

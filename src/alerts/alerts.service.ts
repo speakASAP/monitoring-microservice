@@ -44,13 +44,13 @@ export class AlertsService {
    * Record an alert firing, and say whether this OPENED the problem or is the
    * same problem still going.
    *
-   * Identity is the fingerprint (Alertmanager's hash of the label set). One
+   * Identity is the fingerprint supplied by the caller. One
    * active row per fingerprint, enforced in the DB by the partial unique index
    * uq_alerts_active_fingerprint — an upsert here plus a constraint there, so a
    * concurrent double-fire cannot produce two open rows for one problem.
    *
-   * Before this existed, every re-fire INSERTed: Alertmanager's 4h
-   * repeat_interval turned one stuck pod into 324,835 rows.
+   * Before this existed, every re-fire INSERTed: repeated posts about one stuck
+   * pod turned into 324,835 rows.
    */
   async fire(dto: CreateAlertDto & { fingerprint?: string | null }): Promise<FireResult> {
     const fingerprint = dto.fingerprint ?? null;
@@ -132,7 +132,7 @@ export class AlertsService {
    * nothing was open.
    *
    * 'noop' is a real outcome, not a failure, and is deliberately distinguishable
-   * from 'resolved': Alertmanager re-sends resolve events, and a resolve for an
+   * from 'resolved': sources re-send resolve events, and a resolve for an
    * alert we never recorded must not produce a "recovered!" message about a
    * service that was never reported down. Callers notify only on 'resolved'.
    */
@@ -192,15 +192,15 @@ export class AlertsService {
   /**
    * Active alerts that nothing has re-fired in `olderThanMinutes`.
    *
-   * Alertmanager re-POSTs anything still true every repeat_interval (4h), so an
-   * alert well past that is over — its resolve was simply missed, usually
+   * Every live source re-fires anything still true (HealthWatcher every 5 min),
+   * so an alert well past the window is over — its resolve was simply missed, usually
    * because monitoring itself was down when it arrived. On 2026-08-26 an I/O
    * storm opened 238 alerts whose resolves landed while this service was
    * restarting; with no expiry they would have sat 'active' forever and
    * appeared in the digest of every later message.
    *
-   * Deliberately scoped to alerts WITH a fingerprint: those are the ones
-   * Alertmanager owns and would have re-fired. Alerts from other sources are
+   * Deliberately scoped to alerts WITH a fingerprint: those are the ones a
+   * repeating source owns and would have re-fired. Alerts from other sources are
    * left to their own resolve path.
    */
   async findStale(olderThanMinutes: number): Promise<Alert[]> {
@@ -215,8 +215,8 @@ export class AlertsService {
 
   /**
    * Close every active alert whose `service` matches. Used by the deploy queue,
-   * which knows the service it just deployed but has no Alertmanager
-   * fingerprint of its own.
+   * which knows the service it just deployed but has no per-alert fingerprint
+   * of its own.
    */
   async resolveByService(service: string): Promise<ResolveResult[]> {
     if (!service) {

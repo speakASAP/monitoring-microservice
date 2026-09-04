@@ -5,9 +5,9 @@
  *
  * Both rules here exist because of measured production noise between
  * 2026-08-26 and 2026-09-01, when owner-chat volume went from ~6 messages/day
- * to 46/144/71/105/52/104 and the channel stopped being readable. A single
- * flapping target, kube-state-metrics, produced 154 of those messages while
- * describing one continuous problem.
+ * to 46/144/71/105/52/104 and the channel stopped being readable. From
+ * 2026-08-28 onward, 97-100% of that volume was STILL FAILING repeats from the
+ * HealthWatcher sweep, all describing problems that had not changed.
  */
 
 /**

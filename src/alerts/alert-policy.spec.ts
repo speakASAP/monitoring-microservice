@@ -5,9 +5,9 @@ import { repeatBackoffMinutes, shouldNotifyRepeat, isFlapReopen, isResolveDue } 
  * directly rather than through a live send.
  *
  * Measured owner-chat volume 2026-08-26 .. 2026-09-01: 46/144/71/105/52/104
- * messages/day against a ~6/day baseline. kube-state-metrics alone produced 154
- * of them — 60 ALERT, 44 RESOLVED, 50 STILL FAILING — all describing one
- * continuous problem.
+ * messages/day against a ~6/day baseline. From 2026-08-28 onward 97-100% of it
+ * was STILL FAILING repeats from the 5-minute HealthWatcher sweep, each
+ * restating a problem that had not changed.
  */
 describe('alert notification policy', () => {
   describe('repeat backoff', () => {

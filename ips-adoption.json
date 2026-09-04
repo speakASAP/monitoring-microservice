@@ -69,7 +69,7 @@
       "capability": "notifications",
       "component": "notifications-microservice",
       "decision": "required",
-      "reason": "src/common/notifications/notifications.client.ts sends Alertmanager-derived Telegram messages through notifications-microservice.",
+      "reason": "src/common/notifications/notifications.client.ts sends alert Telegram messages through notifications-microservice.",
       "contract": "POST notification delivery request for Telegram alert messages",
       "configuration": "NOTIFICATION_SERVICE_URL and NOTIFICATION_SERVICE_TOKEN configure delivery.",
       "failureMode": "Delivery failure is logged and rethrown so a muted alerting path is visible.",
@@ -121,7 +121,7 @@
       "capability": "event-bus",
       "component": "RabbitMQ",
       "decision": "not-applicable",
-      "reason": "No RabbitMQ, AMQP, or other event-bus client, package dependency, or configuration exists; Alertmanager uses an HTTP webhook."
+      "reason": "No RabbitMQ, AMQP, or other event-bus client, package dependency, or configuration exists; all alert sources call the HTTP API directly."
     },
     {
       "capability": "docs-rag",
@@ -143,7 +143,7 @@
       "capability": "backups",
       "component": "backups-microservice",
       "decision": "not-applicable",
-      "reason": "Current repository source and documentation contain no documented backup-service contract or backup configuration for Prometheus or Grafana data."
+      "reason": "Current repository source and documentation contain no documented backup-service contract beyond the PostgreSQL alert store."
     }
   ]
 }

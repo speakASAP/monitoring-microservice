@@ -8,11 +8,12 @@ import { Alert } from './alerts.entity';
  * monitoring.alerts held 326,745 rows, every one of them status='active' and
  * not a single 'resolved'. Two independent bugs combined:
  *
- *   1. webhooks.service.ts received Alertmanager's resolve events (the config
- *      has had send_resolved: true since 2026-05-30) and only wrote a log line,
- *      so nothing was ever closed.
- *   2. AlertsService.create() unconditionally INSERTed, and Alertmanager
- *      re-POSTs every repeat_interval (4h), so one long-running problem grew a
+ *   1. The then-live Alertmanager webhook received resolve events and only
+ *      wrote a log line, so nothing was ever closed. (That source was retired
+ *      on 2026-08-27; the lifecycle it exposed is still driven by HealthWatcher
+ *      and the deploy queue, which is why these tests remain.)
+ *   2. AlertsService.create() unconditionally INSERTed, and the source
+ *      re-POSTed every 4h, so one long-running problem grew a
  *      new row every 4 hours -- 324,835 of them for a single alertname/service.
  *
  * The result: the alert table could not answer "what is broken right now",
@@ -53,7 +54,7 @@ describe('AlertsService lifecycle', () => {
 
   const fireDto = (over: Partial<Alert> = {}) => ({
     alertname: 'PodNotReady',
-    service: 'kube-state-metrics',
+    service: 'catalog-microservice',
     severity: 'warning',
     message: 'Pod statex-apps/cliplot-abc not ready for 5 minutes',
     fingerprint: 'fp-001',
@@ -96,7 +97,7 @@ describe('AlertsService lifecycle', () => {
   });
 
   it('resolving something that was never firing is a no-op, not an error', async () => {
-    // Alertmanager re-sends resolves; a resolve for an alert we never recorded
+    // Sources re-send resolves; a resolve for an alert we never recorded
     // must not fabricate a recovery notification for a service that was fine.
     const res = await service.resolveByFingerprint('fp-never-seen');
 
@@ -167,7 +168,7 @@ describe('AlertsService lifecycle', () => {
   });
 
   it('distinct fingerprints are distinct alerts even under one alertname', async () => {
-    // The `service` column is the scraper (kube-state-metrics), so two broken
+    // Historical rows put the scraper in `service`, so two broken
     // pods share alertname AND service. Collapsing them would hide an outage.
     await service.fire(fireDto({ fingerprint: 'fp-001' }));
     await service.fire(fireDto({ fingerprint: 'fp-002' }));

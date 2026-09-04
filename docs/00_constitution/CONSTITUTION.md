@@ -19,10 +19,10 @@ Protect the monitoring service intent to provide reliable production visibility 
 
 ## Constitutional Principles
 
-1. Keep registry and Prometheus blackbox-target changes synchronized and traceable.
+1. Keep registry changes in `src/config/ecosystem-services.ts` traceable.
 2. Preserve secrets in Vault and External Secrets Operator, never tracked artifacts.
 3. Preserve same-origin `/api/*` dashboard calls.
-4. Reload Prometheus configuration instead of rollout restarting it because the single PVC can lock-crash.
+4. Every alert source must be recorded in this repository; monitoring must never claim coverage it does not have.
 5. Validate changes before deployment and preserve operator monitoring surfaces.
 
 ## Amendment Process

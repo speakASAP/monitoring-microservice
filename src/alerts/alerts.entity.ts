@@ -12,9 +12,14 @@ export class Alert {
   alertname: string;
 
   /**
-   * The Prometheus `job`/`service` label — for Alertmanager-sourced alerts this
-   * is the SCRAPER (kube-state-metrics, blackbox-http), not the affected app.
-   * Use `fingerprint` for identity and `message` for what is actually broken.
+   * The service this alert is about. Live sources (HealthWatcher, the deploy
+   * queue) set the affected service directly.
+   *
+   * Historical rows are NOT like that. Until the observability stack was retired
+   * on 2026-08-27 this held the Prometheus `job` label, which names the SCRAPER
+   * (kube-state-metrics, blackbox-http), not the affected app — so on old rows
+   * `message` is the only place the real subject appears. Reading this column as
+   * the subject of a pre-2026-08-27 alert will mislead you.
    */
   @Column()
   service: string;
@@ -32,7 +37,9 @@ export class Alert {
   labels: string;
 
   /**
-   * Alertmanager's stable hash of the alert's label set — the correct dedup key.
+   * Dedup identity. Live sources pass a stable synthetic value (`health:<name>`,
+   * `deploy:<service>`); historical rows carry the retired Alertmanager hash of
+   * the label set.
    * A partial unique index (uq_alerts_active_fingerprint) enforces at most one
    * ACTIVE row per fingerprint, so a re-fire updates instead of inserting.
    * Null for alerts predating the lifecycle migration and for sources that do
@@ -42,9 +49,9 @@ export class Alert {
   fingerprint: string | null;
 
   /**
-   * How many times this alert has fired without an intervening resolve.
-   * Alertmanager re-POSTs every `repeat_interval` (4h), so this climbs on its
-   * own for a long-running problem.
+   * How many times this alert has fired without an intervening resolve. A
+   * long-running problem climbs this on its own, once per HealthWatcher sweep
+   * (5 min) or once per failing deploy.
    */
   @Column({ default: 1 })
   occurrenceCount: number;

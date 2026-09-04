@@ -91,8 +91,8 @@ export class AlertNotifier {
   }
 
   /**
-   * Deliberately short. Alertmanager re-POSTs every repeat_interval (4h) and a
-   * failing deploy re-fires on every commit; resending the full detail body each
+   * Deliberately short. A persisting problem re-fires on every HealthWatcher
+   * sweep and a failing deploy re-fires on every commit; resending the full detail body each
    * time is what buries a channel, and a muted channel is worse than no channel.
    */
   formatRepeat(alert: Alert, active: Alert[], now: Date = new Date()): string {

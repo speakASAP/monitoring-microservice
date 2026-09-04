@@ -18,14 +18,14 @@ related_adrs: []
 ## Entities
 
 - Monitored service: A service entry with name, kind, URL or health path, status expectations, and dashboard visibility.
-- Repository entry: A registry entry shown in the dashboard but not probed by Prometheus.
-- Alert: Alertmanager-derived event stored and exposed by the API.
+- Repository entry: A registry entry shown in the dashboard but not health-probed.
+- Alert: A lifecycle event raised by the health sweep or the deploy queue, stored and exposed by the API.
 - Service health snapshot: Time-based record used by digest and health reporting.
 - Deployment manifest: Kubernetes YAML under `k8s/` that defines API, web, and monitoring stack runtime behavior.
 
 ## Relationships
 
 - Monitored services are defined in `src/config/ecosystem-services.ts`.
-- Prometheus blackbox targets should match service health endpoints in `k8s/prometheus/configmap-config.yaml`.
-- Alerts are received through `/api/webhooks/alertmanager` and exposed through `/api/alerts`.
+- Registry entries should match real service health endpoints in `src/config/ecosystem-services.ts`.
+- Alerts are raised internally and through `POST /api/alerts`, and exposed through `GET /api/alerts`.
 - Dashboard browser requests must use same-origin `/api/*` routes.

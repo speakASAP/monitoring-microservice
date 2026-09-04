@@ -22,7 +22,7 @@ The API uses PostgreSQL through TypeORM, posts structured logs to `logging-micro
 
 ## Asynchronous Dependencies
 
-Alertmanager posts webhooks to `/api/webhooks/alertmanager`. No RabbitMQ or other event-bus client exists in `src/` or package dependencies.
+The deploy queue posts alerts to `/api/alerts`; the health sweep raises them in process. No RabbitMQ or other event-bus client exists in `src/` or package dependencies.
 
 ## Degraded Operation
 

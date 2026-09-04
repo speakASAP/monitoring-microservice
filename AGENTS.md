@@ -14,7 +14,7 @@ Preserve Vision -> Goal Impact -> System -> Feature -> Task -> Execution Plan ->
 
 ## Safety and Operations
 
-Do not expose secrets or production data. Preserve same-origin dashboard calls, synchronize registry and blackbox targets, and reload rather than rollout restart Prometheus because its single PVC can lock-crash.
+Do not expose secrets or production data. Preserve same-origin dashboard calls, and keep `src/config/ecosystem-services.ts` the single source of truth for which services are monitored.
 
 ## Project-Specific Rules
 

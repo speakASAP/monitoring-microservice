@@ -24,7 +24,7 @@ Fragmented or stale health and alerting information prevents operators from safe
 
 ## Target Users
 
-Statex operators using the monitoring API, dashboard, Grafana, Alertmanager, and Prometheus-backed health views.
+Statex operators using the monitoring API, dashboard, and Telegram alerts.
 
 ## Core User Need
 
@@ -33,16 +33,16 @@ Operators need accurate health, alert, and dashboard information without exposin
 ## Key Outcomes
 
 - Central registry and health status through the API and dashboard.
-- Prometheus, Grafana, Alertmanager, and exporter signals in `statex-apps`.
+- Health-sweep results and deploy-queue outcomes in `statex-apps`.
 - Same-origin public dashboard API access and alert notifications.
 
 ## Non-Goals
 
-The service does not own other domain data, provide identity authority, replace Grafana or Prometheus evaluation, or store secrets in documentation.
+The service does not own other domain data, provide identity authority, collect or store metrics time series, or store secrets in documentation.
 
 ## Success Criteria
 
-`/health` reports availability, `/api/services/list` returns the registry, dashboard data follows that registry, and blackbox targets align with monitored health endpoints.
+`/health` reports availability, `/api/services/list` returns the registry, and dashboard data follows that registry.
 
 ## Approval
 

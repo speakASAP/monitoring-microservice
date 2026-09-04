@@ -10,8 +10,12 @@ const HEALTH_WATCH_CRON = process.env.HEALTH_WATCH_CRON || '*/5 * * * *';
 
 /**
  * An active alert with no re-fire in this long is treated as over.
- * Alertmanager's repeat_interval is 4h, so this is comfortably past it — high
- * enough that a genuinely-still-firing alert is never expired early.
+ *
+ * The 6h default was chosen to clear Alertmanager's 4h repeat_interval. That
+ * source was retired on 2026-08-27 and every remaining source re-fires far more
+ * often (this sweep runs every 5 min), so 6h is now very conservative rather
+ * than merely safe. Left unchanged deliberately: shortening it changes when
+ * alerts silently disappear, which deserves its own decision and measurement.
  */
 const STALE_ALERT_MINUTES = Number(process.env.STALE_ALERT_MINUTES || 360);
 
@@ -85,8 +89,8 @@ export class HealthWatcher {
   }
 
   /**
-   * Close alerts nothing has re-fired for far longer than Alertmanager's
-   * repeat_interval — their resolve was missed, almost always because this
+   * Close alerts nothing has re-fired for far longer than any live source's
+   * re-fire interval — their resolve was missed, almost always because this
    * service was down when it arrived.
    *
    * Silent by design. These are not recoveries anyone is waiting to hear about;

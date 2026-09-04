@@ -24,16 +24,16 @@ Provide centralized observability for the Statex ecosystem through a NestJS API,
 - Run `monitoring-microservice` on port 3395 and `monitoring-web` on port 3396.
 - Maintain the API health registry in `src/config/ecosystem-services.ts`.
 - Persist alerts and incidents in PostgreSQL schema `monitoring`.
-- Receive Alertmanager webhooks, record alert transitions, log them, and send Telegram notifications.
-- Configure Prometheus, Grafana, Alertmanager, blackbox exporter, node exporter, and kube-state-metrics in `statex-apps`.
+- Sweep registered service health endpoints, record alert transitions, log them, and send Telegram notifications.
+- Accept alerts from the deploy queue and close them when a service is redeployed.
 
 ## Non-Responsibilities
 
-The service does not own external service business data, authentication authority, payment processing, Prometheus rule evaluation, Grafana visualization, or browser access to internal cluster URLs.
+The service does not own external service business data, authentication authority, payment processing, or browser access to internal cluster URLs.
 
 ## Inputs
 
-API requests to `/health`, `/api/services`, `/api/services/list`, and `/api/alerts`; Alertmanager `POST /api/webhooks/alertmanager`; `DB_*` settings; and bearer-token validation through `POST /auth/validate`.
+API requests to `/health`, `/api/services`, `/api/services/list`, and `/api/alerts`; `DB_*` settings; and bearer-token validation through `POST /auth/validate`.
 
 ## Outputs
 
@@ -61,4 +61,4 @@ No owner-selected next lane exists among target inventory reconciliation, alert-
 
 ## Operational Invariant
 
-`./scripts/deploy.sh` rebuilds API and web images, applies stack manifests, reloads Prometheus through `POST /-/reload`, and rolls out only `monitoring-microservice` and `monitoring-web`. Never rollout restart Prometheus: the single RWO PVC can cause a lock crash. Registry changes also require synchronizing `k8s/prometheus/configmap-config.yaml` and rebuilding the API image.
+`./scripts/deploy.sh` rebuilds API and web images, applies the manifests in `k8s/`, and rolls out only `monitoring-microservice` and `monitoring-web`. Registry changes live solely in `src/config/ecosystem-services.ts` and require rebuilding the API image.

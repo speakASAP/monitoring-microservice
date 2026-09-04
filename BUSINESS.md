@@ -21,7 +21,7 @@ Statex operators need one reliable operational view of service health, alerts, d
 
 ## Target Users and Stakeholders
 
-Statex operators use the monitoring API, dashboard, Grafana, Alertmanager, and Prometheus-backed health views. Monitored services depend on accurate registry and probe configuration.
+Statex operators use the monitoring API, dashboard, and Telegram alerts. Monitored services depend on an accurate registry in `src/config/ecosystem-services.ts`.
 
 ## Value Proposition
 
@@ -30,28 +30,27 @@ The service centralizes observability through health checks, dashboards, alerts,
 ## Goals
 
 - Provide API monitoring on port 3395 and the dashboard on port 3396.
-- Expose `https://monitoring.alfares.cz` and `https://grafana.alfares.cz`.
-- Keep the ecosystem registry and Prometheus blackbox targets synchronized.
-- Deliver Alertmanager-originated alerts through the notifications service.
+- Expose `https://monitoring.alfares.cz`.
+- Keep the ecosystem registry accurate.
+- Deliver health-sweep and deploy-queue alerts through the notifications service.
 
 ## Non-Goals
 
 - Owning other services' business-domain data or authentication authority.
-- Replacing Grafana dashboards or Prometheus rule evaluation.
+- Metrics collection, time-series storage, or dashboard visualization.
 - Storing secrets in tracked files or IPS artifacts.
 
 ## Success Metrics
 
 - `GET /health` reports API availability and `GET /api/services/list` returns the configured registry.
 - Dashboard data remains consistent with the API registry through same-origin `/api/*` calls.
-- Prometheus blackbox targets match monitored health endpoints.
+- Registry entries match real, reachable health endpoints.
 
 ## Business Constraints
 
-- Reload Prometheus configuration rather than rollout restarting it because its single PVC can lock-crash.
 - Preserve production monitoring surfaces across API, dashboard, and stack components.
 - Keep secrets in Vault and External Secrets Operator rather than tracked files.
-- Treat registry and Prometheus-target changes as one operational change.
+- Treat registry changes as one operational change.
 
 ## Approval
 

@@ -249,6 +249,6 @@ goal was taken on 2026-09-04 (alert and health-check noise reduction).
 ## Handoff
 
 The next worker may update only owner-selected scope after reviewing this file, `STATE.json`,
-registry, and Prometheus targets. Production visibility changes require synchronized
-configuration review. **Do not treat the digest as healthy because snapshots are present** - the
+and the service registry in `src/config/ecosystem-services.ts`. Production visibility changes
+require configuration review. **Do not treat the digest as healthy because snapshots are present** - the
 snapshot is written before the send, so a fresh snapshot row proves only that the job started.

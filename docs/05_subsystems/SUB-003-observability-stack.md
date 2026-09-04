@@ -1,11 +1,12 @@
-# SUB-003: Observability Stack
+# SUB-003: Observability Stack (RETIRED)
 
 ```yaml
 id: SUB-003
-status: reviewed
+status: retired
 owner: Operations Lead
 created: 2026-06-13
-last_updated: 2026-06-13
+last_updated: 2026-09-04
+retired: 2026-09-04
 completeness_level: complete
 upstream:
   - ../04_systems/SYS-001-monitoring-platform.md
@@ -13,50 +14,43 @@ downstream: []
 related_adrs: []
 ```
 
-## Purpose
+## Status
 
-Run the Kubernetes monitoring components that collect, store, alert, and visualize operational telemetry.
+Retired. This subsystem no longer exists and this document is kept only so the
+links pointing at it still resolve.
 
-## Parent System
+The stack it described — Prometheus, Alertmanager, Grafana, Loki, blackbox
+exporter, node exporter and kube-state-metrics — was removed from the cluster
+on 2026-08-27 by owner decision, confirmed 2026-09-04. Nothing replaced it.
 
-`docs/04_systems/SYS-001-monitoring-platform.md`
+Verified at retirement: no pods, deployments, services or ingresses for any of
+those components exist in any namespace; no manifest for any of them exists in
+`k8s-manifests` or in this repository's `k8s/`; and `grafana.alfares.cz` is not
+served. Their last alerts arrived on 2026-08-27 between roughly 16:50 and
+20:39, and none of the 10,683 alerts they had produced are still active.
 
-## Responsibilities
+## What this means for monitoring today
 
-- Manage Prometheus, Grafana, Loki, Alertmanager, blackbox exporter, node exporter, and kube-state-metrics manifests.
-- Keep blackbox HTTP probe targets aligned with the service registry.
-- Reload Prometheus config after target changes.
+`monitoring-microservice` no longer ingests external telemetry. Its alerts come
+from exactly two sources, both inside this repository:
 
-## Interfaces
+- `HealthWatcher` — polls the health endpoints in
+  `src/config/ecosystem-services.ts` every five minutes and drives alert
+  fire/resolve.
+- The deploy queue — raises and resolves alerts against the service it deployed.
 
-Kubernetes manifests under `k8s/`, Prometheus reload endpoint, Grafana ingress, and service ports documented in `SYSTEM.md`.
+The `POST /api/webhooks/alertmanager` ingest endpoint was removed in the same
+change. It had no remaining sender and was reachable unauthenticated from the
+public internet.
 
-## Inputs
+## Known coverage gap
 
-Kubernetes manifests, ConfigMaps, PVCs, service endpoints, and alert rules.
-
-## Outputs
-
-Metrics, dashboards, logs, alert routes, and probe status.
-
-## Dependencies
-
-Kubernetes `statex-apps` namespace, PVCs, container registry, and service DNS.
-
-## Data Ownership
-
-Owns monitoring telemetry and alerting configuration, not application business data.
-
-## Failure Modes
-
-- Prometheus rollout restart creates PVC lock contention.
-- Probe targets drift from registry.
-- Grafana datasource/dashboard config becomes inconsistent.
-
-## Validation Criteria
-
-Deploy script applies manifests and reloads Prometheus without rollout restart for config-only changes.
+Infrastructure-level signals that the stack used to provide are now uncovered.
+In particular nothing watches Kubernetes Jobs or CronJobs: `HealthWatcher`
+polls registered HTTP health endpoints only. This is a real gap, not a
+theoretical one — `catalog-contract-monitor` began failing on 2026-09-01 and no
+alert was raised. Closing it is tracked separately.
 
 ## Validation
 
-Validated by deployment evidence and operational checks.
+Validated by the retirement evidence recorded above.

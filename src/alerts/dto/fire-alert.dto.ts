@@ -17,8 +17,7 @@ export class FireAlertDto {
   message: string;
 
   /**
-   * Dedup identity. Callers without an Alertmanager fingerprint (the deploy
-   * queue) should pass a stable synthetic one such as
+   * Dedup identity. Callers should pass a stable synthetic value such as
    * `deploy:<service>` so repeat failures update one row instead of inserting.
    */
   @IsOptional()

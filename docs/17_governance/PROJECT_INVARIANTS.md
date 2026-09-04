@@ -24,15 +24,15 @@ These invariants apply to API, dashboard, registry, alert delivery, and Kubernet
 
 ## Invariants
 
-- `INV-MON-001`: Keep `src/config/ecosystem-services.ts` and `k8s/prometheus/configmap-config.yaml` synchronized.
+- `INV-MON-001`: Keep `src/config/ecosystem-services.ts` accurate; it is the only monitoring registry.
 - `INV-MON-002`: Dashboard browser calls use same-origin `/api/*`, not internal cluster URLs.
-- `INV-MON-003`: Reload Prometheus through `POST /-/reload`; never rollout restart it because its single RWO PVC can lock-crash when two pods contend.
+- `INV-MON-003`: Never present monitoring coverage the service does not have; retiring an alert source requires removing its claims from these documents in the same change.
 - `INV-MON-004`: Store operational secrets through Vault and External Secrets Operator, never tracked files.
-- `INV-MON-005`: Persist, log, and forward Alertmanager transitions rather than silently discarding them.
+- `INV-MON-005`: Persist, log, and forward alert transitions rather than silently discarding them.
 
 ## Exceptions
 
-No exception to registry synchronization, secret handling, same-origin access, or Prometheus reload behavior is authorized by this documentation task. Future exceptions require project-owner approval.
+No exception to registry accuracy, secret handling, or same-origin access is authorized by this documentation task. Future exceptions require project-owner approval.
 
 ## Review Cadence
 
