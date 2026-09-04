@@ -102,7 +102,10 @@ export class HealthWatcher {
     for (const alert of stale) {
       if (!alert.fingerprint) continue;
       try {
-        const { transition } = await this.alerts.resolveByFingerprint(alert.fingerprint);
+        // Silent: these owe no recovery message. See resolveByFingerprint.
+        const { transition } = await this.alerts.resolveByFingerprint(alert.fingerprint, {
+          silent: true,
+        });
         if (transition === 'resolved') expired += 1;
       } catch (err: any) {
         this.logger.error(
@@ -118,7 +121,7 @@ export class HealthWatcher {
   }
 
   private async handleUnhealthy(svc: any): Promise<void> {
-    const { transition, alert } = await this.alerts.fire({
+    const { transition, alert, notify } = await this.alerts.fire({
       alertname: 'ServiceUnhealthy',
       service: svc.name,
       severity: svc.failureKind === 'unreachable' ? 'critical' : 'warning',
@@ -126,24 +129,26 @@ export class HealthWatcher {
       fingerprint: this.fingerprintFor(svc.name),
     });
 
+    // This runs every 5 minutes for as long as the service is down. Sending on
+    // every tick is what produced 288 messages a day for one outage; the
+    // backoff in AlertsService.fire() decides when a re-statement is due.
+    if (!notify) return;
+
     const active = await this.alerts.findActive();
     const message =
-      transition === 'fired'
-        ? this.notifier.formatFired(alert, active)
-        : this.notifier.formatRepeat(alert, active);
+      transition === 'repeat'
+        ? this.notifier.formatRepeat(alert, active)
+        : this.notifier.formatFired(alert, active);
 
     await this.notifications.sendTelegram(message);
   }
 
+  /**
+   * The service is healthy. Mark any open alert resolved, but do not announce
+   * the recovery here -- AlertSweeper does that once the flap window has passed
+   * without a re-fire. See alert-policy.ts for the measurements behind that.
+   */
   private async handleHealthy(svc: any): Promise<void> {
-    const { transition, alert } = await this.alerts.resolveByFingerprint(
-      this.fingerprintFor(svc.name),
-    );
-
-    // 'noop' is the common case: the service is fine and always was. Silence.
-    if (transition !== 'resolved' || !alert) return;
-
-    const active = await this.alerts.findActive();
-    await this.notifications.sendTelegram(this.notifier.formatResolved(alert, active));
+    await this.alerts.resolveByFingerprint(this.fingerprintFor(svc.name));
   }
 }

@@ -33,6 +33,11 @@ describe('AlertsService lifecycle', () => {
       ) ?? null,
     ),
     create: jest.fn((dto: any) => dto as Alert),
+    update: jest.fn(async (id: string, patch: any) => {
+      const row = rows.find((r) => r.id === id);
+      if (row) Object.assign(row, patch);
+      return { affected: row ? 1 : 0 };
+    }),
     save: jest.fn(async (a: Alert) => {
       if (
         a.status === 'active' &&
@@ -99,15 +104,66 @@ describe('AlertsService lifecycle', () => {
     expect(res.alert).toBeNull();
   });
 
-  it('re-firing after a resolve opens a NEW alert rather than reviving the old row', async () => {
+  it('re-firing LONG after a resolve opens a NEW alert rather than reviving the old row', async () => {
+    // Outside the flap window the earlier outage is genuinely over: its ✅ was
+    // already announced, so a fresh failure is fresh news and needs its own row.
     await service.fire(fireDto());
     await service.resolveByFingerprint('fp-001');
+
+    // Age the recovery past the flap window and past its announcement.
+    const resolved = rows.find((r) => r.status === 'resolved');
+    resolved.pendingResolveSince = null;
+    resolved.resolvedAt = new Date(Date.now() - 60 * 60_000);
+
     const res = await service.fire(fireDto());
 
     expect(res.transition).toBe('fired');
+    expect(res.notify).toBe(true);
     expect(res.alert.occurrenceCount).toBe(1);
     expect(rows.filter((r) => r.status === 'resolved')).toHaveLength(1);
     expect(rows.filter((r) => r.status === 'active')).toHaveLength(1);
+  });
+
+  it('re-firing INSIDE the flap window reopens the same row and stays silent', async () => {
+    // Measured 2026-08-26..09-01: 26 resolved -> fired cycles, 22 of them under
+    // ten minutes. Each one sent a ✅ then a fresh 🚨 about a service whose real
+    // state never changed. The recovery here was never announced, so the
+    // standing 🚨 is still correct and the honest action is to say nothing.
+    await service.fire(fireDto());
+    await service.resolveByFingerprint('fp-001');
+
+    const res = await service.fire(fireDto());
+
+    expect(res.transition).toBe('reopened');
+    expect(res.notify).toBe(false);
+    expect(res.alert.flapCount).toBe(1);
+    expect(rows.filter((r) => r.status === 'active')).toHaveLength(1);
+    expect(rows.filter((r) => r.status === 'resolved')).toHaveLength(0);
+    // The debt is cleared: this recovery must never be announced later.
+    expect(res.alert.pendingResolveSince).toBeNull();
+  });
+
+  it('a silent resolve owes no recovery message', async () => {
+    // Stale expiry closes alerts for pods that vanished hours ago. Announcing
+    // them would be a storm about ancient history.
+    await service.fire(fireDto());
+    const res = await service.resolveByFingerprint('fp-001', { silent: true });
+
+    expect(res.transition).toBe('resolved');
+    expect(res.alert!.pendingResolveSince).toBeNull();
+    expect(await service.findDueResolves()).toHaveLength(0);
+  });
+
+  it('a deferred recovery becomes due only after the flap window passes', async () => {
+    await service.fire(fireDto());
+    await service.resolveByFingerprint('fp-001');
+
+    expect(await service.findDueResolves()).toHaveLength(0);
+
+    const later = new Date(Date.now() + 11 * 60_000);
+    const due = await service.findDueResolves(later);
+    expect(due).toHaveLength(1);
+    expect(due[0].fingerprint).toBe('fp-001');
   });
 
   it('distinct fingerprints are distinct alerts even under one alertname', async () => {

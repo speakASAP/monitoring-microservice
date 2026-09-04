@@ -21,8 +21,8 @@ describe('HealthWatcher', () => {
 
   const build = () => {
     const alerts = {
-      fire: jest.fn(async (_dto: any): Promise<any> => ({ transition: 'fired', alert: { id: 'a', service: 'x', occurrenceCount: 1 } })),
-      resolveByFingerprint: jest.fn(async (_fp: string): Promise<any> => ({ transition: 'noop', alert: null })),
+      fire: jest.fn(async (_dto: any): Promise<any> => ({ transition: 'fired', alert: { id: 'a', service: 'x', occurrenceCount: 1 }, notify: true })),
+      resolveByFingerprint: jest.fn(async (_fp: string, _opts?: any): Promise<any> => ({ transition: 'noop', alert: null })),
       findActive: jest.fn(async (): Promise<any[]> => []),
       findStale: jest.fn(async (): Promise<any[]> => []),
     };
@@ -65,7 +65,11 @@ describe('HealthWatcher', () => {
     expect(notifications.sendTelegram).not.toHaveBeenCalled();
   });
 
-  it('sends the clear event when a previously failing service is healthy again', async () => {
+  it('records the recovery but does NOT announce it — AlertSweeper does, after the flap window', async () => {
+    // The clear event is deferred, not dropped. Between 2026-08-26 and 09-01,
+    // 22 of 26 recoveries were contradicted by a re-fire within ten minutes, so
+    // announcing here sent a ✅ and a fresh 🚨 for a service whose real state
+    // never changed. AlertSweeper delivers it once the window passes quietly.
     const { watcher, alerts, notifications, services } = build();
     services.getServicesStatus.mockResolvedValue([status({ healthy: true, failureKind: undefined })] as any);
     alerts.resolveByFingerprint.mockResolvedValue({
@@ -76,7 +80,38 @@ describe('HealthWatcher', () => {
     await watcher.runCheck();
 
     expect(alerts.resolveByFingerprint).toHaveBeenCalledWith('health:payments-microservice');
-    expect(notifications.sendTelegram).toHaveBeenCalledWith('resolved-msg');
+    expect(notifications.sendTelegram).not.toHaveBeenCalled();
+  });
+
+  it('suppresses a repeat that is still inside its backoff window', async () => {
+    // HealthWatcher runs every 5 minutes for as long as a service is down.
+    // Notifying on every tick sent 288 messages for a single day-long outage.
+    const { watcher, alerts, notifications, services } = build();
+    services.getServicesStatus.mockResolvedValue([status()] as any);
+    alerts.fire.mockResolvedValue({
+      transition: 'repeat',
+      alert: { id: 'a', service: 'payments-microservice', occurrenceCount: 7 },
+      notify: false,
+    } as any);
+
+    await watcher.runCheck();
+
+    expect(alerts.fire).toHaveBeenCalledTimes(1);
+    expect(notifications.sendTelegram).not.toHaveBeenCalled();
+  });
+
+  it('sends the repeat once the backoff window has elapsed', async () => {
+    const { watcher, alerts, notifications, services } = build();
+    services.getServicesStatus.mockResolvedValue([status()] as any);
+    alerts.fire.mockResolvedValue({
+      transition: 'repeat',
+      alert: { id: 'a', service: 'payments-microservice', occurrenceCount: 7 },
+      notify: true,
+    } as any);
+
+    await watcher.runCheck();
+
+    expect(notifications.sendTelegram).toHaveBeenCalledWith('repeat-msg');
   });
 
   it('stays silent for a healthy service that was never failing', async () => {
@@ -113,7 +148,9 @@ describe('HealthWatcher', () => {
     await watcher.runCheck();
 
     expect(alerts.findStale).toHaveBeenCalled();
-    expect(alerts.resolveByFingerprint).toHaveBeenCalledWith('fp-stale');
+    // silent: true is what keeps a 236-row expiry sweep out of the sweeper's
+    // deferred-recovery queue, which would otherwise announce every one of them.
+    expect(alerts.resolveByFingerprint).toHaveBeenCalledWith('fp-stale', { silent: true });
   });
 
   it('expiring a stale alert is silent — it is bookkeeping, not a recovery', async () => {

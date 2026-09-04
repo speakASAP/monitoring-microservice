@@ -1,16 +1,24 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { IsNull, Not, Repository } from 'typeorm';
 import { Alert } from './alerts.entity';
 import { CreateAlertDto } from './dto/create-alert.dto';
 import { AcknowledgeAlertDto } from './dto/acknowledge-alert.dto';
+import { isFlapReopen, isResolveDue, shouldNotifyRepeat } from './alert-policy';
 
 /** What actually happened to the alert state — decides whether to notify. */
-export type AlertTransition = 'fired' | 'repeat' | 'resolved' | 'noop';
+export type AlertTransition = 'fired' | 'repeat' | 'resolved' | 'reopened' | 'noop';
 
 export interface FireResult {
-  transition: Extract<AlertTransition, 'fired' | 'repeat'>;
+  transition: Extract<AlertTransition, 'fired' | 'repeat' | 'reopened'>;
   alert: Alert;
+  /**
+   * Whether the caller should actually send a message. Separate from the
+   * transition because a state change is not the same thing as news: a repeat
+   * inside its backoff window, and a re-fire that merely reopens an alert whose
+   * 🚨 was never retracted, are both real transitions that must stay silent.
+   */
+  notify: boolean;
 }
 
 export interface ResolveResult {
@@ -62,8 +70,44 @@ export class AlertsService {
       existing.severity = dto.severity;
       if (dto.labels !== undefined) existing.labels = dto.labels;
 
+      // A repeat is a re-statement of something the channel was already told.
+      // It is worth sending on an escalating schedule, not on every 5-minute
+      // HealthWatcher tick, which is what sent 288 messages for a one-day
+      // outage.
+      const notify = shouldNotifyRepeat(existing, now);
+      if (notify) existing.lastNotifiedAt = now;
+
       const saved = await this.repo.save(existing);
-      return { transition: 'repeat', alert: saved };
+      return { transition: 'repeat', alert: saved, notify };
+    }
+
+    // A re-fire of an alert that resolved moments ago and has not yet announced
+    // its recovery. The service dipped and came back inside the flap window, so
+    // the original 🚨 still stands unretracted and the channel is already
+    // correct. Reopen the same row and say nothing.
+    const pending = fingerprint
+      ? await this.repo.findOne({
+          where: { fingerprint, status: 'resolved' },
+          order: { resolvedAt: 'DESC' },
+        })
+      : null;
+
+    if (pending && isFlapReopen(pending, now)) {
+      pending.status = 'active';
+      pending.resolvedAt = null;
+      pending.pendingResolveSince = null;
+      pending.flapCount = (pending.flapCount ?? 0) + 1;
+      pending.occurrenceCount = (pending.occurrenceCount ?? 1) + 1;
+      pending.lastFiredAt = now;
+      pending.message = dto.message;
+      pending.severity = dto.severity;
+      if (dto.labels !== undefined) pending.labels = dto.labels;
+
+      const saved = await this.repo.save(pending);
+      this.logger.log(
+        `[AlertsService] flap reopen fingerprint=${fingerprint} flapCount=${saved.flapCount} — recovery was never announced, staying silent`,
+      );
+      return { transition: 'reopened', alert: saved, notify: false };
     }
 
     const alert = this.repo.create({
@@ -73,10 +117,14 @@ export class AlertsService {
       occurrenceCount: 1,
       lastFiredAt: now,
       resolvedAt: null,
+      pendingResolveSince: null,
+      flapCount: 0,
+      // An opening alert always notifies, so record that up front.
+      lastNotifiedAt: now,
     });
 
     const saved = await this.repo.save(alert);
-    return { transition: 'fired', alert: saved };
+    return { transition: 'fired', alert: saved, notify: true };
   }
 
   /**
@@ -88,7 +136,10 @@ export class AlertsService {
    * alert we never recorded must not produce a "recovered!" message about a
    * service that was never reported down. Callers notify only on 'resolved'.
    */
-  async resolveByFingerprint(fingerprint: string): Promise<ResolveResult> {
+  async resolveByFingerprint(
+    fingerprint: string,
+    options: { silent?: boolean } = {},
+  ): Promise<ResolveResult> {
     if (!fingerprint) {
       throw new Error('resolveByFingerprint requires a fingerprint');
     }
@@ -101,10 +152,41 @@ export class AlertsService {
       return { transition: 'noop', alert: null };
     }
 
+    const now = new Date();
     alert.status = 'resolved';
-    alert.resolvedAt = new Date();
+    alert.resolvedAt = now;
+    // Mark the recovery owed, not delivered. The row leaves findActive() and
+    // the digest block immediately -- the state is truthful at once -- but the
+    // ✅ message waits out the flap window so a service that dips and returns
+    // does not announce a recovery it is about to contradict.
+    //
+    // `silent` closes an alert without ever owing a message. Stale expiry uses
+    // it: those alerts are bookkeeping about pods that vanished hours ago, not
+    // recoveries anyone is waiting to hear about, and the deferred-resolve
+    // sweeper must never turn a 236-row expiry sweep into 236 ✅ messages.
+    alert.pendingResolveSince = options.silent ? null : now;
     const saved = await this.repo.save(alert);
     return { transition: 'resolved', alert: saved };
+  }
+
+  /**
+   * Recoveries that have now stayed quiet long enough to announce.
+   *
+   * Scoped to rows still holding a pendingResolveSince: a flap reopen clears it
+   * and the sweeper clears it on delivery, so an alert can never announce its
+   * recovery twice.
+   */
+  async findDueResolves(now: Date = new Date()): Promise<Alert[]> {
+    const pending = await this.repo.find({
+      where: { status: 'resolved', pendingResolveSince: Not(IsNull()) },
+    });
+
+    return pending.filter((alert) => isResolveDue(alert, now));
+  }
+
+  /** Mark a deferred recovery as delivered so it is announced exactly once. */
+  async markResolveNotified(id: string, now: Date = new Date()): Promise<void> {
+    await this.repo.update(id, { pendingResolveSince: null, lastNotifiedAt: now });
   }
 
   /**
@@ -151,6 +233,7 @@ export class AlertsService {
     for (const alert of active) {
       alert.status = 'resolved';
       alert.resolvedAt = now;
+      alert.pendingResolveSince = now;
       results.push({ transition: 'resolved', alert: await this.repo.save(alert) });
     }
     return results;

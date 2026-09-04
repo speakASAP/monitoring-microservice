@@ -55,6 +55,37 @@ export class Alert {
   @Column({ type: 'timestamp', nullable: true })
   resolvedAt: Date | null;
 
+  /**
+   * When this alert entered the deferred-resolve state, or null if it is not
+   * awaiting a recovery announcement.
+   *
+   * A resolve does not notify immediately. The row is marked resolved at once
+   * so the digest and findActive() stop naming it, but the ✅ message is held
+   * until the service has stayed quiet for ALERT_FLAP_WINDOW_MINUTES. A re-fire
+   * inside that window reopens this same row silently instead of announcing a
+   * recovery followed by a fresh outage.
+   */
+  @Column({ type: 'timestamp', nullable: true })
+  pendingResolveSince: Date | null;
+
+  /**
+   * How many times this alert has resolved and re-fired inside the flap window.
+   *
+   * Never resets while the alert stays open, so it is the honest measure of an
+   * unstable target. Surfaced in the repeat message: the flapping itself is the
+   * signal worth acting on once suppression makes the cycles invisible.
+   */
+  @Column({ default: 0 })
+  flapCount: number;
+
+  /**
+   * When a message about this alert was last actually delivered - not when it
+   * last fired. Drives the repeat backoff, so a long-running outage restates
+   * itself on an escalating schedule instead of on every 5-minute tick.
+   */
+  @Column({ type: 'timestamp', nullable: true })
+  lastNotifiedAt: Date | null;
+
   @Column({ nullable: true })
   acknowledgedBy: string;
 

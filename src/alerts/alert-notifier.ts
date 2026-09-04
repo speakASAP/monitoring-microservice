@@ -96,8 +96,14 @@ export class AlertNotifier {
    * time is what buries a channel, and a muted channel is worse than no channel.
    */
   formatRepeat(alert: Alert, active: Alert[], now: Date = new Date()): string {
+    // Flap suppression makes each dip-and-return invisible on purpose, so the
+    // count is stated here instead. An unstable target is a different problem
+    // from a steadily-down one and needs a different fix, and this line is now
+    // the only place that distinction is visible.
+    const flaps = (alert.flapCount ?? 0) > 0 ? `, ${alert.flapCount} flaps` : '';
+
     return [
-      `🔁 STILL FAILING: ${alert.service} — ${alert.alertname} (attempt ${alert.occurrenceCount ?? 1})`,
+      `🔁 STILL FAILING: ${alert.service} — ${alert.alertname} (attempt ${alert.occurrenceCount ?? 1}${flaps})`,
       '',
       this.buildActiveDigest(active, now),
     ].join('\n');
@@ -108,14 +114,23 @@ export class AlertNotifier {
    * earlier 🚨 so the channel stops implying the service is still down.
    */
   formatResolved(alert: Alert, active: Alert[], now: Date = new Date()): string {
-    const downFor = this.formatDuration(
-      (alert.resolvedAt?.getTime() ?? now.getTime()) - this.firedAtMs(alert),
-    );
+    const resolvedAt =
+      alert.resolvedAt instanceof Date ? alert.resolvedAt : alert.resolvedAt ? new Date(alert.resolvedAt) : null;
+    const downFor = this.formatDuration((resolvedAt?.getTime() ?? now.getTime()) - this.firedAtMs(alert));
+
+    // Reaching a resolve message at all means the service stayed healthy for
+    // the whole flap window, so a non-zero count describes the outage that just
+    // ended rather than doubt about the recovery.
+    const flaps =
+      (alert.flapCount ?? 0) > 0
+        ? [`(recovered through ${alert.flapCount} flap${alert.flapCount === 1 ? '' : 's'})`, '']
+        : [];
 
     return [
       `✅ RESOLVED: ${alert.service}`,
       '',
       `${alert.alertname} recovered after ${downFor}`,
+      ...flaps,
       '',
       this.buildActiveDigest(active, now),
     ].join('\n');

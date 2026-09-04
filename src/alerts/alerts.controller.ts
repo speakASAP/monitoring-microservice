@@ -32,16 +32,28 @@ export class AlertsController {
   @Post('fire')
   @UseGuards(MonitoringIngestGuard)
   async fire(@Body() dto: FireAlertDto) {
-    const { transition, alert } = await this.svc.fire(dto);
+    const { transition, alert, notify } = await this.svc.fire(dto);
     const active = await this.svc.findActive();
 
-    const message =
-      transition === 'fired'
-        ? this.notifier.formatFired(alert, active)
-        : this.notifier.formatRepeat(alert, active);
+    // `notify: false` is a deliberate silence, not a failure: either a repeat
+    // inside its backoff window, or a flap reopen whose 🚨 was never retracted.
+    // The transition is still returned so a caller can tell what happened.
+    if (notify) {
+      const message =
+        transition === 'repeat'
+          ? this.notifier.formatRepeat(alert, active)
+          : this.notifier.formatFired(alert, active);
+      await this.notifications.sendTelegram(message);
+    }
 
-    await this.notifications.sendTelegram(message);
-    return { transition, id: alert.id, occurrenceCount: alert.occurrenceCount, activeCount: active.length };
+    return {
+      transition,
+      notified: notify,
+      id: alert.id,
+      occurrenceCount: alert.occurrenceCount,
+      flapCount: alert.flapCount,
+      activeCount: active.length,
+    };
   }
 
   /**
@@ -64,14 +76,19 @@ export class AlertsController {
       return { transition: 'noop', resolvedCount: 0 };
     }
 
+    // The ✅ message is NOT sent here. The alerts are marked resolved and leave
+    // the digest immediately, but the announcement is owed rather than
+    // delivered: AlertSweeper flushes it once the flap window passes without a
+    // re-fire. A service that dips and returns therefore produces no message at
+    // all, instead of a recovery it contradicts minutes later.
     const active = await this.svc.findActive();
-    // One message per cleared alert would spam on a multi-alert recovery; the
-    // first carries the digest, which already lists whatever remains.
-    await this.notifications.sendTelegram(
-      this.notifier.formatResolved(resolved[0].alert!, active),
-    );
-
-    return { transition: 'resolved', resolvedCount: resolved.length, activeCount: active.length };
+    return {
+      transition: 'resolved',
+      resolvedCount: resolved.length,
+      activeCount: active.length,
+      notified: false,
+      recoveryDeferred: true,
+    };
   }
 
   @Post()
