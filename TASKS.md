@@ -120,6 +120,32 @@ absence from the logging index).
   A digest-shaped send measured from inside the pod today: HTTP 201 in 572ms, well under the 8s
   ceiling under normal load.
 
+  **Measured 2026-09-04, narrowing the second loss mode.** Four candidate mechanisms are now
+  ruled out by direct query against the notifications DB:
+  - *Slow dedup lookup exceeding the 8s client timeout* - ruled out. `notifications` holds 3,019
+    rows in total (2026-05-05 .. 2026-09-04), so the 5-minute window lookup is trivial regardless
+    of the single-column-only indexes.
+  - *Auth or a missing token* - ruled out. `NOTIFICATION_SERVICE_TOKEN` is set (64 chars) and
+    monitoring successfully created 6-142 notification rows through the same endpoint and the
+    same token on 08-28, 08-30, 08-31 and 09-03.
+  - *notifications-microservice being unavailable at 08:00* - ruled out. The runlayer Orchestrator
+    row was created at 08:00:00.03-08:00:00.20 on all five days.
+  - *Channel-policy rejection in `resolveSendPolicy`* - ruled out. The digest sends no
+    `channelKey`, so resolution returns `legacy_fallback_no_channel_key` without a DB read or a
+    throw.
+
+  **The loss is not digest-specific**, which is the finding that reframes this item. On 08-28,
+  08-30, 09-02 and 09-03 monitoring created *zero* notification rows anywhere in 06:30-09:30. On
+  08-31 it created its last row at 07:50:22 and its next only after 09:30, on a day that produced
+  48 alerts overall. Yet `service_health_snapshots` has a row at 08:00:00.2-08:00:02 every time.
+  So `runDigest()` reaches the snapshot upsert and the monitoring process then stops emitting
+  outbound notifications entirely across a window spanning the send - a monitoring-side stall or
+  death inside `sendTelegram()`, not a notifications-side drop. Consistent with the 512Mi memory
+  limit, the 30s-period liveness probe, and how frequently these pods are replaced.
+
+  Per the owner decision above this is left as a supported inference: k8s events no longer retain
+  that window and no pod from it survives, so it cannot be proven retrospectively.
+
 
 - **Sweep other `/api/logs` callers for the same payload defect.** The bug fixed here in
   `7d256e2` is not monitoring-specific in nature: any service that spreads context fields across
@@ -129,15 +155,32 @@ absence from the logging index).
   cost eleven days of un-diagnosable outage.
 
 
-- Owner decision, still open and unchanged: choose one implementation or operations lane -
-  target inventory reconciliation, alert and health-check noise reduction, dashboard validation,
-  or deployment-readiness verification.
+- **Owner decision taken 2026-09-04: alert and health-check noise reduction.** The lane is
+  chosen and the queue decision is closed. Of the four candidate lanes this is the only one with
+  evidence of live harm: the kube-state-metrics flapping storm from 2026-08-26 18:30 drove
+  owner-chat telegram volume from ~6 msgs/day to 46/144/71/105/52/104 before returning to 5/11/6
+  on 09-02..09-04. That noise is what let a nine-day digest outage pass unnoticed, so reducing it
+  is a prerequisite for the owner chat being a trustworthy signal at all. Target inventory
+  reconciliation and dashboard validation were considered and deferred: neither has current
+  evidence of harm.
+
+- **Owner decision taken 2026-09-04 on proving the second loss mode: logging-index coverage only.**
+  Restore this service's presence in the log index, and stop there; do not build the extra
+  forward instrumentation that would capture pod state around each 08:00 run. Rationale: delivery
+  is restored (messageId 2863 on 09-04) and `e73f64f` now escalates a failed digest out of band,
+  so a recurrence announces itself on day one rather than day nine. This decision is already
+  satisfied by `50bd870` (missing Authorization header) and `7d256e2` (extras nested under
+  `metadata` so `forbidNonWhitelisted` stops rejecting every structured event).
+
+- **Owner decision taken 2026-09-04: do not chase the unexplained HTTP 500.** The single probe
+  against the pre-fix notifications pod (see Active, above) stays recorded but unpursued. Revisit
+  only if 500s recur.
 
 ## Blocked
 
-The next monitoring *implementation* goal remains blocked on the owner selecting a bounded lane
-and target coverage. This is a queue decision and is separate from the digest delivery defect
-above, which is a regression in shipped behaviour and needs no lane decision.
+Nothing. The lane decision that blocked the next monitoring *implementation* goal was taken on
+2026-09-04 (alert and health-check noise reduction - see Ready next). Target coverage within that
+lane is now an implementation question, not an owner decision.
 
 
 ## Completed
