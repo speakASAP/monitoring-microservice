@@ -73,6 +73,48 @@ The daily digest outage that preceded this lane is resolved and its plan is clos
   The practical consequence is that `284c9b8` fixed the lane's real dominant cause rather than a
   secondary one, so no further work is owed against the flapping target.
 
+- **DONE 2026-09-04: the retired Prometheus stack is removed from code, config and docs
+  (`3023d84` + `2865e1a`, deployed as `monitoring-microservice:2865e1a`).** Consequence 1 of the
+  owner's answer below is now closed; consequence 2 (CronJob coverage) is still open.
+
+  A security fix came out of it. `POST /api/webhooks/alertmanager` was the Alertmanager ingest
+  path, had no sender left, and was mounted under the `/api` ingress with no guard: an
+  unauthenticated POST from the public internet returned 200 and could create alert rows and
+  send Telegram messages to the owner chat. Confirmed reachable before removal and confirmed
+  404 after. `src/webhooks` is deleted.
+
+  Also removed: `PROMETHEUS_URL`/`GRAFANA_URL`/`ALERTMANAGER_URL` (nothing read them),
+  `GRAFANA_ADMIN_PASSWORD` from the ExternalSecret (verified pruned from the live Secret, which
+  ESO does not always do), the `deploy_preflight`/`deploy_post_manifests` hooks that applied
+  `k8s/<stack>` trees and POSTed `/-/reload` (both already dead - the trees are gone), and the
+  dashboard's `Grafana →` link, which pointed at a host with no ingress.
+
+  Comments that justified live thresholds by Alertmanager's 4h `repeat_interval` were reworded,
+  since that rationale no longer holds. **Left deliberately unchanged:** `STALE_ALERT_MINUTES`
+  is 360, sized against that 4h interval. Every remaining source re-fires far more often (the
+  sweep is every 5 min), so 6h is now very conservative. Shortening it changes when alerts
+  silently disappear, so it needs its own measurement rather than a drive-by edit.
+
+  Historical records under `docs/11_*`, `docs/12_*`, `docs/13_*`, `docs/14_*` and `docs/21_*`
+  were left untouched on purpose: they record what was true when that work was done.
+  `SUB-003-observability-stack.md` is rewritten as a retirement record rather than deleted, so
+  the three documents linking to it still resolve.
+
+  Ecosystem-wide cleanup shipped alongside, in `shared`, `backups-microservice` and
+  `logging-microservice`. Two of those were stale instructions that could not be followed:
+  the hosting-cost plan told the next session to pull 30-day peaks from "Prometheus (already
+  running)", and the DR runbook listed Prometheus/Grafana PVCs as an open backup gap, which
+  would have sent a responder looking for volumes that do not exist.
+
+- **OPEN, found during that cleanup: ESO sync failures are no longer detected.**
+  `shared/scripts/secret-census/README.md` documented detection of ExternalSecrets *failing to
+  sync* (Vault unreachable, sealed, bad path, auth expired) as belonging to the Prometheus/ESO
+  alert lane. That lane died with the stack on 2026-08-27 - its `external-secrets` alerts (168)
+  stopped that day - and nothing replaced it. The secret-census guard does **not** close this:
+  it assumes a healthy sync and checks whether the value is right. So a secret that silently
+  stops syncing is currently invisible. Flagged in that README. This is the same shape of gap as
+  the CronJob one below and probably belongs in the same piece of work.
+
 - **ANSWERED 2026-09-04: the Prometheus stack removal was intentional.** Owner: it is not used
   and is no longer needed. So its absence is not a defect and nothing is to be restored - do not
   propose reinstating Prometheus, Alertmanager, kube-state-metrics or blackbox-exporter.
