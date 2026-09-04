@@ -90,26 +90,43 @@ absence from the logging index).
      carries a non-null subject and therefore could never have matched the dedup key. Dedup is
      ruled out for those 5 by direct query, confirming the 2026-09-03 sweep.
 
-  **What the 5 remaining days most likely were.** They fall inside the kube-state-metrics flapping
-  storm that began 2026-08-26 18:30 and drove owner-chat telegram volume from ~6 msgs/day to
-  46/144/71/105/52/104. Volume returned to normal (5, 11, 6) on 09-02..09-04. `NotificationsClient`
-  gives the POST an **8s axios timeout** (`src/common/notifications/notifications.client.ts`), and
-  `runDigest()` catches every error into a log line without rethrowing, so a slow or failed send
-  leaves no notification row and no visible alarm. This remains the leading explanation but is
-  **not proven**: the monitoring pod has restarted since (09:47 UTC), and the logging index returns
-  zero rows for this service across the whole window while intermittently timing out on
-  `kubectl exec`, so `daily_digest_failed` events could not be retrieved to confirm it.
+  **Why it was invisible - found and fixed 2026-09-04.** The reason no evidence survived is
+  that this service could not write to the log index at all. Two independent defects, both
+  hidden by `LoggingService.log()`'s bare `catch { return; }`:
 
-  Measured today, for the record: a digest-shaped send from inside the monitoring pod returned
-  HTTP 201 in **572ms** with a distinct id and messageId 2867 - the path is healthy and nowhere
-  near the 8s ceiling under normal load.
+  1. **No Authorization header.** The client never sent one; `/api/logs` answers
+     401 `Logging ingest credential required`. Fixed in `50bd870`; the token was already
+     mounted as `LOGGING_SERVICE_TOKEN`.
+  2. **Extras spread across the top level.** `LogEntryDto` sets `forbidNonWhitelisted`, so any
+     unknown top-level key is a 400 `property <x> should not exist`. Every structured call this
+     service makes carries extras (`daily_digest_failed` -> `{date, error}`), so even after the
+     header fix they were all still rejected. Extras now nest under the DTO's `metadata` field.
+     Fixed in `7d256e2`. The DTO was correct and is unchanged.
 
-  **Still worth doing** (neither is a delivery blocker now):
-  - The digest swallows its own failure. `runDigest()`'s catch should surface a delivery failure
-    somewhere the owner sees it, otherwise the next silent outage is invisible for another 9 days.
-    This is the defect that made a 1-day cron miss cost 9 days of diagnosis.
-  - Monitoring logs are absent from the logging index for 2026-08-25..09-04. Until that is fixed,
-    post-hoc diagnosis of this service depends entirely on whichever pod is currently alive.
+  Measured inside the pod, authenticated: no extras -> 201, `{probe}` -> 400, `{date}` -> 400.
+  After `7d256e2`, a real `daily_digest_failed` event with `{date, error}` was emitted from the
+  deployed service and retrieved from the index (2026-09-04T11:15:43Z). That event class is the
+  one that was missing for eleven days.
+
+  **What actually broke delivery on the 5 remaining days is still not proven.** The leading
+  explanation stays the kube-state-metrics flapping storm that began 2026-08-26 18:30 and drove
+  owner-chat telegram volume from ~6 msgs/day to 46/144/71/105/52/104 (back to 5/11/6 on
+  09-02..09-04), against the 8s axios timeout in `NotificationsClient`. That remains a
+  hypothesis: the logs that would have confirmed it were destroyed by the two defects above,
+  and no pod from that window still exists. It is now recoverable rather than invisible - if a
+  digest fails again, both the escalation message (`e73f64f`) and a `daily_digest_failed` row
+  will say so on the day it happens.
+
+  A digest-shaped send measured from inside the pod today: HTTP 201 in 572ms, well under the 8s
+  ceiling under normal load.
+
+
+- **Sweep other `/api/logs` callers for the same payload defect.** The bug fixed here in
+  `7d256e2` is not monitoring-specific in nature: any service that spreads context fields across
+  the top level of its log payload gets a 400 from `forbidNonWhitelisted` and, if it swallows
+  errors the way this one did, loses its structured events without noticing. Worth enumerating
+  the callers and checking which ones nest under `metadata`. Cheap to check, and this instance
+  cost eleven days of un-diagnosable outage.
 
 
 - Owner decision, still open and unchanged: choose one implementation or operations lane -
