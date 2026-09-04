@@ -4,7 +4,7 @@
 
 ## Active
 
-### Daily digest not delivered since 2026-08-25 - FIXED AND VERIFIED (2026-09-03)
+### Daily digest outage 2026-08-26 -> 2026-09-03 - DELIVERY RESTORED, VERIFIED 2026-09-04
 
 **The bug is in notifications-microservice, not in monitoring-microservice.**
 
@@ -57,34 +57,61 @@ notifications-microservice, so it is not being changed unilaterally.
 the snapshot before calling `sendTelegram`.
 
 
-Restore daily health digest delivery. The 08:00 UTC job still runs and still writes its
-snapshot every day, but no digest has reached Telegram since 2026-08-25 and the failure is
-silent: nothing is logged and no notification row is created.
+Delivery is restored as of 2026-09-04 (messageId 2863). See "RESOLVED by observation" under
+Ready next for the two distinct causes behind the 2026-08-26 -> 09-03 gap and for the two
+follow-ups that remain open (the swallowed failure in `runDigest()`'s catch, and this service's
+absence from the logging index).
 
 
 ## Ready next
 
-- **OPEN: a second, unexplained digest failure mode.** The dedup fix (see Active) is real and
-  verified, but a sweep on 2026-09-03 showed it explains only **3 of the 9** recent missing
-  digests - 08-27, 08-29 and 09-01, the days with a null-subject monitoring alert inside the
-  5-minute window. On **08-28, 08-30, 08-31, 09-02 and 09-03** the nearest same-shape message
-  was 10-30 minutes away, so dedup cannot have been the cause, yet no notification row exists.
-  On 09-03 the request provably reached notifications (JwtRolesGuard WARN at 08:00:00) and the
-  snapshot was written at 08:00:00.2, so `runDigest()` ran and called out. Something between the
-  controller entry and row creation is discarding it without an error.
-  Hypotheses NOT yet eliminated: an intermittent 500 on `/notifications/send` (one probe returned
-  HTTP 500 on 2026-09-03 and was never explained); an exception inside `send()` before the insert.
-  Ruled OUT by measurement: missing token, message length (4140 chars delivered fine, id 2858),
-  channel-policy rejection (it throws rather than dropping).
-  **Decisive observation is the 08:00 digest on 2026-09-04** - it now runs with the dedup fix and
-  the new shape-collision WARN in place. If it is still missing, the second mode is confirmed
-  and dedup was never the main cause.
+- **RESOLVED by observation: the 2026-09-04 digest delivered.** The decisive test this item
+  called for has now run. Digest row `303b798b-5e70-46ba-b206-5af8ce26a859` was created 2026-09-04
+  08:00:00.789 UTC, status `sent`, Telegram messageId **2863**, against the same pods that
+  carried the dedup fix (`notifications-...-nxnpf`, 19h old at the time of check). Delivery is
+  restored; the 9-day gap 2026-08-26 -> 2026-09-03 is closed.
+
+  It delivered through the tightest collision in the whole series: the Orchestrator digest was
+  written 0.68s earlier (08:00:00.111, messageId 2862) sharing channel/recipient/type. Pre-fix
+  that pair survived only because the Orchestrator sets a non-null subject; now content and
+  `service` must also match, so it passes on two independent counts.
+
+  **The 9 missing days had two different causes, not one.**
+
+  1. **2026-08-26 - the job never ran.** `monitoring.service_health_snapshots` has rows for every
+     date from 08-23 onward *except* 08-26. `runDigest()` upserts the snapshot before sending, so
+     a missing snapshot means the `@Cron` never fired. The Orchestrator's 08:00 message is also
+     absent that day (it sent normally at 08-25 08:00 and again 08-26 20:00), so this was not a
+     monitoring-specific fault. No notification row, no snapshot, nothing to explain downstream.
+  2. **The remaining 8 days - `runDigest()` ran and the send produced no row.** Snapshots exist at
+     08:00:00.2-08:00:02 on all 8. Of these, dedup explains exactly 3 (08-27, 08-29, 09-01: a
+     null-subject monitoring alert inside the preceding 5 minutes). On the other 5 (08-28, 08-30,
+     08-31, 09-02, 09-03) the *only* other 08:00 telegram message was the Orchestrator's, which
+     carries a non-null subject and therefore could never have matched the dedup key. Dedup is
+     ruled out for those 5 by direct query, confirming the 2026-09-03 sweep.
+
+  **What the 5 remaining days most likely were.** They fall inside the kube-state-metrics flapping
+  storm that began 2026-08-26 18:30 and drove owner-chat telegram volume from ~6 msgs/day to
+  46/144/71/105/52/104. Volume returned to normal (5, 11, 6) on 09-02..09-04. `NotificationsClient`
+  gives the POST an **8s axios timeout** (`src/common/notifications/notifications.client.ts`), and
+  `runDigest()` catches every error into a log line without rethrowing, so a slow or failed send
+  leaves no notification row and no visible alarm. This remains the leading explanation but is
+  **not proven**: the monitoring pod has restarted since (09:47 UTC), and the logging index returns
+  zero rows for this service across the whole window while intermittently timing out on
+  `kubectl exec`, so `daily_digest_failed` events could not be retrieved to confirm it.
+
+  Measured today, for the record: a digest-shaped send from inside the monitoring pod returned
+  HTTP 201 in **572ms** with a distinct id and messageId 2867 - the path is healthy and nowhere
+  near the 8s ceiling under normal load.
+
+  **Still worth doing** (neither is a delivery blocker now):
+  - The digest swallows its own failure. `runDigest()`'s catch should surface a delivery failure
+    somewhere the owner sees it, otherwise the next silent outage is invisible for another 9 days.
+    This is the defect that made a 1-day cron miss cost 9 days of diagnosis.
+  - Monitoring logs are absent from the logging index for 2026-08-25..09-04. Until that is fixed,
+    post-hoc diagnosis of this service depends entirely on whichever pod is currently alive.
 
 
-- **Owner decision (blocking): narrow the notifications dedup key.** Root cause of the digest
-  outage is `notifications-microservice/src/notifications/notifications.service.ts:139-176`.
-  See the Active section for the evidence. The fix changes behaviour for every caller of
-  notifications-microservice, so it needs an owner call before implementation.
 - Owner decision, still open and unchanged: choose one implementation or operations lane -
   target inventory reconciliation, alert and health-check noise reduction, dashboard validation,
   or deployment-readiness verification.

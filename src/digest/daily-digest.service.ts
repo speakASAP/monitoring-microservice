@@ -69,6 +69,24 @@ export class DailyDigestService {
       const msg = err instanceof Error ? err.message : String(err);
       this.logger.error(`[DailyDigestService] digest failed: ${msg}`);
       await this.logging.log('error', 'daily_digest_failed', { date: todayKey, error: msg });
+
+      // Escalate out of band. Logging alone is not enough: LoggingService drops
+      // its own transport errors, and this service produced no retrievable log
+      // rows at all for 2026-08-25..09-04, so a failure recorded only there can
+      // stay invisible for days — which is precisely what happened.
+      try {
+        await this.notifications.reportDeliveryFailure(msg);
+      } catch (reportErr) {
+        const reportMsg = reportErr instanceof Error ? reportErr.message : String(reportErr);
+        this.logger.error(
+          `[DailyDigestService] digest failed AND the failure could not be reported: ${reportMsg}`,
+        );
+        await this.logging.log('error', 'daily_digest_failure_report_failed', {
+          date: todayKey,
+          error: reportMsg,
+          originalError: msg,
+        });
+      }
     }
   }
 }
