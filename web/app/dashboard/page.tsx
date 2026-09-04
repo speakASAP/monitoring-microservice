@@ -40,9 +40,6 @@ function AdminDashboard() {
           </button>
         ))}
         <div style={{ paddingTop: '2rem' }}>
-          <a href="https://grafana.alfares.cz" target="_blank" rel="noreferrer" style={{ color: '#94a3b8', fontSize: '0.8rem', display: 'block', padding: '0.5rem 0.75rem' }}>
-            Grafana →
-          </a>
           <button onClick={() => { clearAuthTokens(); window.location.assign('/'); }} style={{ color: '#64748b', fontSize: '0.8rem', display: 'block', padding: '0.5rem 0.75rem', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left' }}>
             Sign out
           </button>
