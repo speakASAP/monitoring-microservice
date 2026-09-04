@@ -18,25 +18,39 @@ This lane was chosen by the owner on 2026-09-04 over target inventory reconcilia
 dashboard validation, which were deferred because neither had current evidence of harm.
 
 The evidence here is direct. Between 2026-08-26 and 2026-09-01 owner-chat volume ran at
-46/144/71/105/52/104 messages per day against a ~6/day baseline, and kube-state-metrics alone
-accounted for 154 of them while describing one continuous problem. That noise is what allowed a
+46/144/71/105/52/104 messages per day against a ~6/day baseline. That noise is what allowed a
 nine-day daily-digest outage (2026-08-26 -> 2026-09-03) to pass unnoticed. A channel nobody can
 read is not an alerting channel, so reducing the volume is a precondition for every other
 monitoring guarantee.
 
+**Attribution corrected 2026-09-04 (`5f6bd8b`).** An earlier version of this document blamed
+kube-state-metrics for the sustained volume. That is wrong and the error is worth recording:
+`alerts.service` holds the Prometheus *job* label, so it names the scraper, not the affected
+workload. Per day, kube-state-metrics drove only 08-26 and 08-27 (918 and 285 alerts, then zero
+from 08-28 onward, verified against `monitoring.alerts`). From 08-28 the volume was `STILL
+FAILING` repeats at 97-100% of messages - the `HealthWatcher` defect that `284c9b8` fixed. The
+Prometheus stack itself (kube-state-metrics, Prometheus, Alertmanager, blackbox-exporter) is
+absent from the cluster entirely, confirmed by `kubectl get pods -A`.
+
 ## Scope
 
 1. **Flap damping and repeat backoff** - delivered 2026-09-04 (`284c9b8`).
-2. **The flapping target itself** - not started. Damping makes the channel readable but does not
-   fix kube-state-metrics, which is what is actually unstable. Determine whether its
-   `PodNotReady`/`PodCrashLooping` alerts reflect a real recurring fault or a probe/threshold
-   that is too tight.
+2. **CronJob/Job failure coverage** - not started. This replaces the earlier "fix
+   kube-state-metrics" step, which named a target that does not exist. With the Prometheus stack
+   gone, `HealthWatcher` polls registered service `/health` endpoints only and there is no Job or
+   CronJob failure path at all. The gap is live, not theoretical: `catalog-contract-monitor` has
+   been failing since 2026-09-01 with no alert raised.
+3. **Owner question, unresolved:** whether the Prometheus stack's removal was intentional. If it
+   was, CronJob coverage has to be rebuilt inside this service; if it was not, the stack itself
+   needs restoring. The answer changes the shape of step 2, so it is a prerequisite.
 
 ## Evidence
 
 - Delivered: flap damping and escalating repeat backoff, commit `284c9b8`, deployed as
   `monitoring-microservice:284c9b8` and verified live (one telegram where the old code sent
-  three; deferred recovery delivered exactly once by the sweeper).
+  three; deferred recovery delivered exactly once by the sweeper). Note that `284c9b8`'s own
+  commit message carries the kube-state-metrics misattribution corrected above; it is recorded
+  here rather than rewritten.
 - Schema: `scripts/migrate-alert-flap-damping.sql`, applied to production before the deploy.
 - Measurements and design traps are recorded in `TASKS.md` under Ready next.
 
