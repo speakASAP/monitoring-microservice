@@ -38,8 +38,37 @@ absent from the cluster entirely, confirmed by `kubectl get pods -A`.
 2. **CronJob/Job failure coverage** - not started. This replaces the earlier "fix
    kube-state-metrics" step, which named a target that does not exist. With the Prometheus stack
    gone, `HealthWatcher` polls registered service `/health` endpoints only and there is no Job or
-   CronJob failure path at all. The gap is live, not theoretical: `catalog-contract-monitor` has
-   been failing since 2026-09-01 with no alert raised.
+   CronJob failure path at all.
+
+   Measured 2026-09-04, every Job in `statex-apps` with `status.failed > 0` (all with
+   `succeeded: 0`):
+
+   | Job | failed | started |
+   | --- | --- | --- |
+   | `marketing-order-affinity-aukro-daily-29797250` | 1 | 2026-08-27T12:56Z |
+   | `warehouse-reservation-expiry-29797503` | 4 | 2026-08-27T17:05Z |
+   | `marketing-order-affinity-central-orders-backfill-29799560` | 1 | 2026-08-29T03:20Z |
+   | `marketing-order-affinity-bazos-daily-29802060` | 1 | 2026-08-30T21:00Z |
+   | `cliplot-readiness-monitor-29808589` | 1 | 2026-09-04T09:49Z |
+   | `catalog-contract-monitor-29808704` | 4 | 2026-09-04T11:44Z |
+
+   **Five of the six recovered on their own** - each has a later `Complete` run, so most of these
+   are transient failures rather than standing outages. `warehouse-reservation-expiry` runs every
+   5 minutes and completed successfully 83s before this check, so the 08-27 row is a stuck
+   historical record, not an ongoing data problem. That does not shrink the gap, it sharpens it:
+   the defect is that **nothing reported any of them**, so a transient failure and a real outage
+   are indistinguishable from the owner chat.
+
+   **Only `catalog-contract-monitor` is actually broken right now** - its most recent run failed
+   and its last success was 3d4h earlier. Cause is identified, not a mystery: the `product-search`
+   contract returns **401** (`"Product search did not return 2xx"`), i.e. a credential problem in
+   the catalog smoke check, not a catalog outage. Two of the six are themselves monitors
+   (`catalog-contract-monitor`, `cliplot-readiness-monitor`), so the watchers fail silently and
+   nothing reports that the watchers are down.
+
+   Coverage should therefore distinguish "failed once and recovered" from "failing and still
+   failing"; alerting on every `status.failed > 0` would have produced six alerts today for one
+   real problem, which is the same noise defect this lane exists to remove.
 3. **Owner question, unresolved:** whether the Prometheus stack's removal was intentional. If it
    was, CronJob coverage has to be rebuilt inside this service; if it was not, the stack itself
    needs restoring. The answer changes the shape of step 2, so it is a prerequisite.
