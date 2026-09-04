@@ -138,12 +138,37 @@ The daily digest outage that preceded this lane is resolved and its plan is clos
   credential paths without updating this caller.
 
 
-- **Sweep other `/api/logs` callers for the same payload defect.** The bug fixed here in
-  `7d256e2` is not monitoring-specific in nature: any service that spreads context fields across
-  the top level of its log payload gets a 400 from `forbidNonWhitelisted` and, if it swallows
-  errors the way this one did, loses its structured events without noticing. Worth enumerating
-  the callers and checking which ones nest under `metadata`. Cheap to check, and this instance
-  cost eleven days of un-diagnosable outage.
+- **DONE 2026-09-04: swept every `/api/logs` caller in the ecosystem. The payload defect is rare;
+  a missing credential is the real epidemic.** 33 repos contain a caller. Verified with
+  `logging-microservice/scripts/verify-ecosystem-logging.js` (read-only) plus per-service index
+  queries, not by reading source alone.
+
+  **11 services log absolutely nothing, all for the same reason - no `LOGGING_SERVICE_TOKEN`:**
+  `domain-research`, `leads-microservice`, `invoices-microservice`, `ai-microservice`,
+  `shop-assistant`, `rent-a-box-api`, `heureka-service`, `allegro-service`, `bazos-service`,
+  `aukro-service`, `agentic-email-processing-system`. All have `LOGGING_SERVICE_URL` set, so they
+  believe they are logging; the endpoint answers 401 and each client's catch discards it.
+
+  All 15 token-holding services checked (`auth`, `payments`, `orders`, `catalog`, `warehouse`,
+  `suppliers`, `marketing`, `docs-rag`, `minio`, `backups`, `crypto-ai-agent`, `notifications`,
+  `runlayer`, `wisdom-quotes`, `marathon`) log correctly.
+
+  **The payload defect this item was written about was found in only two services**, both fixed:
+  `prompts-microservice` (`f4306c8` - `meta` instead of `metadata`, uppercased level, AND no auth
+  header: three defects, any one of which was fatal) and `monitoring-microservice` (`7d256e2`).
+  `speakasap` was never affected - its senders are `api-gateway` and `notification-service`, which
+  already nest under `metadata`; only its unused `verbose` level 400ed, fixed in `bc208fd` there.
+  `domain-research` (spreads `...meta`) and `leads-microservice` (sends `meta`) also carry the
+  payload defect, but it is moot until they have a credential.
+
+  **Not actioned here, and deliberately so.** Fixing the 11 is a deployment change across 11
+  repositories - each needs the `logging-ingest-credentials` secretKeyRef added to its Deployment,
+  and note the same live-vs-git drift found in this repo: the reference exists only on live
+  objects and in no manifest, so a full apply from git drops it. That is a wider scope than this
+  sweep item and touches services this repo does not own. Recorded for the owner to schedule.
+
+  Worth knowing: a bare probe returning 201 does not prove a service logs. Probe with the payload
+  shape the service actually sends, and confirm the row comes back out of the index.
 
 
 
