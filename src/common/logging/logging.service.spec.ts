@@ -47,7 +47,7 @@ describe('LoggingService', () => {
       service: 'monitoring-microservice',
       level: 'error',
       msg: 'daily_digest_failed',
-      date: '2026-09-04',
+      metadata: { date: '2026-09-04' },
     });
   });
 
@@ -62,5 +62,58 @@ describe('LoggingService', () => {
     mockedAxios.post.mockRejectedValue(new Error('connection refused'));
 
     await expect(build('tok-123').log('error', 'x')).resolves.toBeUndefined();
+  });
+});
+
+/**
+ * The ingest DTO sets forbidNonWhitelisted, so an unknown top-level property is
+ * a 400 "property <x> should not exist". This client spread its `extra` object
+ * across the top level, so every structured call it makes — daily_digest_failed
+ * carries {date, error}, daily_digest_sent carries {date, total, failing, ...} —
+ * was rejected and then discarded by the silent catch. Extras belong under the
+ * DTO's `metadata` field. Verified live: {probe:...} => 400, no extras => 201.
+ */
+describe('LoggingService payload shape', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockedAxios.post.mockResolvedValue({ status: 201 } as any);
+  });
+
+  function svc() {
+    const config = {
+      get: jest.fn((key: string) =>
+        key === 'logging.url' ? 'http://logging-microservice:3367' : 'tok',
+      ),
+    };
+    return new LoggingService(config as any);
+  }
+
+  it('nests extra fields under metadata instead of the top level', async () => {
+    await svc().log('error', 'daily_digest_failed', { date: '2026-09-04', error: 'boom' });
+
+    const [, payload] = mockedAxios.post.mock.calls[0] as any[];
+    expect(payload.metadata).toEqual({ date: '2026-09-04', error: 'boom' });
+    expect(payload.date).toBeUndefined();
+    expect(payload.error).toBeUndefined();
+  });
+
+  it('keeps the DTO-recognised top-level fields at the top level', async () => {
+    await svc().log('info', 'daily_digest_sent', { total: 52 });
+
+    const [, payload] = mockedAxios.post.mock.calls[0] as any[];
+    expect(payload).toMatchObject({
+      service: 'monitoring-microservice',
+      level: 'info',
+      msg: 'daily_digest_sent',
+      duration_ms: 0,
+    });
+    expect(typeof payload.timestamp).toBe('string');
+  });
+
+  it('omits metadata entirely when there are no extras', async () => {
+    await svc().log('info', 'plain');
+
+    const [, payload] = mockedAxios.post.mock.calls[0] as any[];
+    expect(payload.metadata).toBeUndefined();
   });
 });

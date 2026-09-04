@@ -18,13 +18,19 @@ export class LoggingService {
       // 401 "Logging ingest credential required" and the catch below silently
       // drops it, which is how this service ended up with no log rows at all for
       // 2026-08-25..09-04 and why the digest outage could not be traced.
+      // Extras go under `metadata`, never spread across the top level: the ingest
+      // DTO sets forbidNonWhitelisted, so an unknown top-level key is rejected as
+      // 400 "property <x> should not exist" and then discarded by the catch below.
+      // Every structured call here carries extras (daily_digest_failed sends
+      // {date, error}), so spreading them dropped exactly the events worth keeping.
+      const hasExtra = !!extra && Object.keys(extra).length > 0;
       await axios.post(`${this.url}/api/logs`, {
         service: 'monitoring-microservice',
         level,
         msg,
         timestamp: new Date().toISOString(),
         duration_ms: 0,
-        ...extra,
+        ...(hasExtra ? { metadata: extra } : {}),
       }, {
         timeout: 3000,
         headers: this.token ? { Authorization: `Bearer ${this.token}` } : undefined,
