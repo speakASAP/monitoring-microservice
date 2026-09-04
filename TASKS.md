@@ -6,8 +6,8 @@
 **Lane in progress: alert and health-check noise reduction** - `GOAL-IMPACT-TASK-005`
 (owner decision 2026-09-04, `docs/22_goal_impact/GOAL-IMPACT-TASK-005.md`).
 Its first delivery shipped the same day - flap damping and repeat backoff, `284c9b8`, deployed
-and verified live (see Ready next). The lane is not finished: the next step is the flapping
-target itself, kube-state-metrics.
+and verified live (see Ready next). That delivery addressed the lane's dominant cause; see the
+correction note below before acting on the kube-state-metrics framing used earlier.
 
 The daily digest outage that preceded this lane is resolved and its plan is closed
 (`docs/superpowers/plans/2026-06-09-daily-health-digest.md`, status `done`).
@@ -17,9 +17,11 @@ The daily digest outage that preceded this lane is resolved and its plan is clos
 
 - **DONE 2026-09-04: flap damping and repeat backoff shipped (`284c9b8`, deployed as
   `monitoring-microservice:284c9b8`).** First delivery in the noise-reduction lane. Measured
-  cause: owner-chat volume ran at 46/144/71/105/52/104 msgs/day against a ~6/day baseline, and
-  kube-state-metrics alone produced 154 of those messages (60 ALERT, 44 RESOLVED, 50 STILL
-  FAILING) all describing one continuous problem. Two independent defects, both fixed:
+  cause: owner-chat volume ran at 46/144/71/105/52/104 msgs/day against a ~6/day baseline.
+  (Attribution corrected 2026-09-04 - see the correction note below. The commit message of
+  `284c9b8` credits kube-state-metrics with 154 of those messages; that holds only for 08-26 and
+  08-27. `STILL FAILING` repeats were the dominant ongoing cause.) Two independent defects, both
+  fixed:
   1. *No flap damping.* 26 `resolved -> fired` transitions, 22 inside ten minutes (mean 429s),
      each sending a ✅ then a fresh 🚨 for a service whose real state never changed. A resolve now
      only *owes* the ✅; `AlertSweeper` pays it after `ALERT_FLAP_WINDOW_MINUTES` (10) of quiet,
@@ -49,11 +51,47 @@ The daily digest outage that preceded this lane is resolved and its plan is clos
   - `pendingResolveSince` is cleared only after a *confirmed* send, so a failed delivery retries
     next sweep instead of silently losing the recovery.
 
-- **Next in this lane: the flapping target itself.** Damping makes the channel readable but does
-  not fix kube-state-metrics, which is what is actually unstable. `flapCount` is now surfaced in
-  the repeat and resolve messages specifically so that target stays visible once its cycles stop
-  producing traffic. Worth checking whether the `PodNotReady`/`PodCrashLooping` alerts against it
-  reflect a real recurring fault or a probe/threshold that is too tight.
+- **CORRECTION 2026-09-04: the kube-state-metrics framing above was wrong, and the follow-up it
+  implied is closed.** Three errors, all now measured rather than inferred:
+  1. *The target does not exist.* kube-state-metrics, Prometheus, Alertmanager and
+     blackbox-exporter are all absent from the cluster - no pods, no deployments, no namespace,
+     and no manifest for any of them anywhere in `k8s-manifests`. All three Prometheus-stack
+     alert sources (kube-state-metrics 10,334 alerts, blackbox-http 181, external-secrets 168)
+     stopped firing simultaneously on 2026-08-27 between ~16:50 and ~20:39, and 0 of those 10,683
+     alerts are still active. There is nothing there to fix or to tune a probe against.
+  2. *The alerts were never about kube-state-metrics.* `alerts.service` holds the Prometheus
+     **job** label - the scraper, not the affected workload. Identity is `fingerprint`; the
+     affected pod appears only in `message`. Reading that column as the subject is what made
+     "kube-state-metrics is flapping" look true. The actual subjects were other pods, mostly
+     CronJob pods (`domain-research-notification-dispatch-*`, `catalog-contract-monitor-*`,
+     `cliplot-readiness-monitor-*`) plus a crashlooping `prometheus-5bd8bf9cff-mx4jc`.
+  3. *It was not the dominant cause.* Per-day, kube-state-metrics drove only 08-26 (42) and 08-27
+     (141). Volume from 08-28 onward (69/103/48/102) was `STILL FAILING: <service> -
+     ServiceUnhealthy (attempt N)` - the `HealthWatcher` repeat-every-tick defect - at 97% of
+     messages on 08-28, 100% on 08-29, 73% on 08-31 and 100% on 09-01.
+
+  The practical consequence is that `284c9b8` fixed the lane's real dominant cause rather than a
+  secondary one, so no further work is owed against the flapping target.
+
+- **Open question for the owner: was the Prometheus stack removal intentional?** It is untracked
+  in `k8s-manifests`, so its disappearance on 2026-08-27 left no commit and no record. If it was
+  deliberate, monitoring should stop presenting infrastructure coverage it no longer has. If it
+  was not, monitoring silently lost its only infrastructure alert source - a larger problem than
+  the noise this lane set out to fix. Do not assume either way.
+
+- **Coverage gap this exposed: nothing watches CronJobs.** `HealthWatcher` polls registered
+  service `/health` endpoints only; there is no Job or CronJob failure path anywhere in the
+  service. While the Prometheus stack existed it covered that implicitly. It no longer does, and
+  the gap is not theoretical - `catalog-contract-monitor` has been failing since its last success
+  on 2026-09-01 (4 pods in `Error` for schedule `29808704`, exit 1) with no alert raised.
+  Its failure is a real one, and out of scope here because the fix belongs to
+  `catalog-microservice`: `/api/products/search` returns 401 on both the anonymous and the
+  authorized profile. Reproduced directly against `catalog-microservice-69775f8f58-pd4cj:3200` -
+  anonymous gives `Missing or invalid Authorization header`; the monitor's `JWT_TOKEN` (HS256,
+  valid structure, unexpired - though only until 2026-09-11) gives `Token validation failed`; and
+  the internal-service path gives `Unknown internal service name 'catalog-contract-monitor'`.
+  The catalog auth hardening of 2026-09-01 (`3fb296a`, `fc2f81c`, `c3614b5`) tightened both
+  credential paths without updating this caller.
 
 
 - **Sweep other `/api/logs` callers for the same payload defect.** The bug fixed here in
