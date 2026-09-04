@@ -73,11 +73,13 @@ The daily digest outage that preceded this lane is resolved and its plan is clos
   The practical consequence is that `284c9b8` fixed the lane's real dominant cause rather than a
   secondary one, so no further work is owed against the flapping target.
 
-- **Open question for the owner: was the Prometheus stack removal intentional?** It is untracked
-  in `k8s-manifests`, so its disappearance on 2026-08-27 left no commit and no record. If it was
-  deliberate, monitoring should stop presenting infrastructure coverage it no longer has. If it
-  was not, monitoring silently lost its only infrastructure alert source - a larger problem than
-  the noise this lane set out to fix. Do not assume either way.
+- **ANSWERED 2026-09-04: the Prometheus stack removal was intentional.** Owner: it is not used
+  and is no longer needed. So its absence is not a defect and nothing is to be restored - do not
+  propose reinstating Prometheus, Alertmanager, kube-state-metrics or blackbox-exporter.
+  Two consequences follow, and only the second is work:
+  1. Monitoring must stop presenting infrastructure coverage it no longer has.
+  2. The CronJob/Job coverage gap below is now unambiguously this service's to close, since
+     nothing else will.
 
 - **Coverage gap this exposed: nothing watches CronJobs.** `HealthWatcher` polls registered
   service `/health` endpoints only; there is no Job or CronJob failure path anywhere in the

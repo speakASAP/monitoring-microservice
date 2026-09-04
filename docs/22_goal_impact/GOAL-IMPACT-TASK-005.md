@@ -69,9 +69,12 @@ absent from the cluster entirely, confirmed by `kubectl get pods -A`.
    Coverage should therefore distinguish "failed once and recovered" from "failing and still
    failing"; alerting on every `status.failed > 0` would have produced six alerts today for one
    real problem, which is the same noise defect this lane exists to remove.
-3. **Owner question, unresolved:** whether the Prometheus stack's removal was intentional. If it
-   was, CronJob coverage has to be rebuilt inside this service; if it was not, the stack itself
-   needs restoring. The answer changes the shape of step 2, so it is a prerequisite.
+3. **Owner decision 2026-09-04 - the Prometheus stack was removed deliberately.** It is not used
+   and is not coming back. This closes the prerequisite that previously blocked step 2 and settles
+   its shape: CronJob/Job coverage is built inside monitoring-microservice, and nothing is to be
+   restored. Do not treat the stack's absence as a defect, and do not propose reinstating
+   Prometheus, Alertmanager, kube-state-metrics or blackbox-exporter as a way to close the Job
+   coverage gap.
 
 ## Evidence
 
