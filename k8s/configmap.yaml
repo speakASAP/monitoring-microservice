@@ -49,3 +49,13 @@ data:
   HEARTBEAT_CHECK_ENABLED: "true"
   HEARTBEAT_CHECK_CRON: "*/5 * * * *"
   HEARTBEAT_MISSED_CYCLES: "3"
+  # ErrorLogWatcher. Reads the in-memory error index in logging-microservice;
+  # never /api/logs/query, which blocks that service's event loop for ~37s per
+  # call and restarts it under load.
+  ERROR_WATCH_ENABLED: "true"
+  ERROR_WATCH_CRON: "*/5 * * * *"
+  ERROR_WINDOW_MINUTES: "60"
+  # 3 rather than 1: a single error line is usually a transient the service
+  # already retried past, and a channel with that false-positive rate gets muted.
+  ERROR_MIN_OCCURRENCES: "3"
+  ERROR_CRITICAL_OCCURRENCES: "50"
