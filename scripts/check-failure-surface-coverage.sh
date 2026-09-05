@@ -56,14 +56,14 @@ check 'k8s-cronjob' \
   'Kubernetes CronJobs'
 
 # Match the script basename each crontab line invokes; that is the stable part.
-# Takes the LAST .sh on the line, not the first: entries are wrapped
-# (`with-deploy-lock.sh real-job.sh`), and the wrapper is plumbing while the
-# payload is the surface that can fail.
+# Wrappers are plumbing, not surfaces: entries are wrapped by run-and-report.sh
+# (outcome reporting) and sometimes with-deploy-lock.sh (mutex). The payload
+# script is the thing that can fail, so the wrappers are filtered out.
 check 'host-crontab' \
   "$(crontab -l 2>/dev/null | grep -v '^#' | grep -v '^$' \
      | grep -oE '[a-z0-9./-]*\.sh' | awk '{print $0}' \
      | sed 's|.*/||; s/\.sh$//' \
-     | grep -v '^with-deploy-lock$' | sort -u)" \
+     | grep -vE '^(with-deploy-lock|run-and-report)$' | sort -u)" \
   'Host crontab entries'
 
 # Only ecosystem-owned timers. OS timers (apt, man-db, logrotate, sysstat,

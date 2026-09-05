@@ -103,44 +103,48 @@ const CRONJOB_SURFACES: FailureSurface[] = [
 /**
  * Root crontab entries, measured 2026-09-05.
  *
- * Every one of these redirects both stdout and stderr into a log file and is
- * observed by nothing. A failure writes to disk and stops there: no exit code
- * is inspected, no alert is raised, and the file is only read if someone
- * already suspects a problem. This is the same shape as the trigger incident,
- * on the host instead of in the cluster.
+ * Until 2026-09-05 every one of these redirected stdout and stderr into a log
+ * file and was observed by nothing: a failure wrote to disk and stopped there,
+ * no exit code inspected, no alert raised, the file read only by someone who
+ * already suspected a problem. The same shape as the trigger incident, on the
+ * host instead of in the cluster.
+ *
+ * All four are now wrapped by shared/scripts/run-and-report.sh, which preserves
+ * the append-to-logfile behaviour and the job's exit code and adds an alert on
+ * failure plus a resolve on the next success.
  */
 const CRONTAB_SURFACES: FailureSurface[] = [
   {
     surface: 'docker-prune-cron',
     kind: 'host-crontab',
     owningRepo: 'shared',
-    failureDestination: 'nothing',
+    failureDestination: 'monitoring-alert',
     autoFixEligible: false,
-    notes: 'Weekly Sun 04:00. Prunes docker state under the deploy lock; a bad automated edit could delete live images.',
+    notes: 'Weekly Sun 04:00. Wrapped by run-and-report.sh. Prunes docker state under the deploy lock; a bad automated edit could delete live images.',
   },
   {
     surface: 'rotate-logging-admin-token',
     kind: 'host-crontab',
     owningRepo: 'shared',
-    failureDestination: 'nothing',
+    failureDestination: 'monitoring-alert',
     autoFixEligible: false,
-    notes: 'Daily 03:15. Credential rotation — a silent failure here expires log ingest ecosystem-wide. Never auto-repaired.',
+    notes: 'Daily 03:15. Wrapped by run-and-report.sh. Credential rotation — a silent failure here expires log ingest ecosystem-wide. Never auto-repaired.',
   },
   {
     surface: 'check-ingest-staleness',
     kind: 'host-crontab',
     owningRepo: 'logging-microservice',
-    failureDestination: 'nothing',
+    failureDestination: 'monitoring-alert',
     autoFixEligible: false,
-    notes: 'Daily 03:45. This is itself a detector; if it dies silently the ecosystem loses a coverage check.',
+    notes: 'Daily 03:45. Wrapped by run-and-report.sh. This is itself a detector; if it dies silently the ecosystem loses a coverage check.',
   },
   {
     surface: 'backup-all-databases',
     kind: 'host-crontab',
     owningRepo: 'database-server',
-    failureDestination: 'nothing',
+    failureDestination: 'monitoring-alert',
     autoFixEligible: false,
-    notes: 'Daily 02:00. Backups: a silently failing backup is only discovered during a restore. Highest-consequence gap on this list.',
+    notes: 'Daily 02:00. Wrapped by run-and-report.sh — this was the highest-consequence gap, since a silently failing backup is only discovered during a restore.',
   },
 ];
 

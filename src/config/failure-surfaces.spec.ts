@@ -20,16 +20,26 @@ describe('failure surface ledger', () => {
     expect(new Set(names).size).toBe(names.length);
   });
 
-  it('records the known-blind host surfaces rather than omitting them', () => {
+  it('records the still-blind host surfaces rather than omitting them', () => {
     // The whole point of the ledger: a gap you have declared is a visible
-    // finding, a gap you have not is indistinguishable from silence. Every
-    // host surface is currently unobserved — no crontab entry checks its exit
-    // code and no systemd unit declares OnFailure=.
+    // finding, a gap you have not is indistinguishable from silence.
+    //
+    // The remaining gaps are the three systemd timers. No unit under
+    // /etc/systemd/system declares OnFailure=, and adding one needs root, which
+    // is password-gated on this host. They stay declared as gaps until that
+    // happens — which is precisely the behaviour being asserted here.
     const blind = undetectedSurfaces().map((s) => s.surface);
-    expect(blind).toContain('backup-all-databases');
-    expect(blind).toContain('rotate-logging-admin-token');
     expect(blind).toContain('alfares-critical-backup');
-    expect(blind.length).toBeGreaterThan(0);
+    expect(blind).toContain('statex-secret-census');
+    expect(blind.every((b) => b !== 'backup-all-databases')).toBe(true);
+  });
+
+  it('shows the crontab entries are now reporting, including the backup', () => {
+    // These were the highest-consequence gaps: a silently failing backup is
+    // only discovered during a restore.
+    const crontab = FAILURE_SURFACES.filter((s) => s.kind === 'host-crontab');
+    expect(crontab).toHaveLength(4);
+    expect(crontab.every((s) => s.failureDestination === 'monitoring-alert')).toBe(true);
   });
 
   it('shows every CronJob is now covered, which was not true before JobWatcher', () => {
