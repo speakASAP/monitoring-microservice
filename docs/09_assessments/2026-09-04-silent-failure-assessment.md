@@ -233,16 +233,6 @@ pagination and PII redaction.
    `catalog-contract-monitor` failure — never reaches logging-microservice.** A
    log-watching alerter reading this service would **not** have caught this incident.
    This is the single most important finding for the owner's stated preferred approach.
-2. **Coverage is poor and actively degrading.** Per `monitoring-microservice/TASKS.md:141-151`,
-   a 2026-09-04 sweep of 33 repos found **11 services logging absolutely nothing**, all for
-   the same reason — no `LOGGING_SERVICE_TOKEN`: `domain-research`, `leads-microservice`,
-   `invoices-microservice`, `ai-microservice`, `shop-assistant`, `rent-a-box-api`,
-   `heureka-service`, `allegro-service`, `bazos-service`, `aukro-service`,
-   `agentic-email-processing-system`. All have `LOGGING_SERVICE_URL` set, "so they believe
-   they are logging; the endpoint answers 401 and each client's catch discards it." Live
-   pod logs right now show continuous `log_ingest_rejected / missing_credential` for
-   `speakasap` (1282 in a 2000-line window), `prompts-microservice` (487),
-   `speakasap-content` (195) and others. **Absence of error logs currently means nothing.**
 3. **No push, no stream.** No WebSocket, SSE, or webhook anywhere in `src/`. Any consumer
    must poll `GET /api/logs/query`.
 4. **No index; files, not a database.** Queries are `readdirSync` + line-by-line

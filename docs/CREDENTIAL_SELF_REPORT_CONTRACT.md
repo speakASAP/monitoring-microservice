@@ -20,9 +20,3 @@ internal:monitoring-microservice:credential-report role, creates a separate
 service actor, and denies and error-logs an undecorated route. The target probe
 must be read-only. A 2xx response is accepted; 401 or 403 is rejected; a
 network or server failure is indeterminate.
-
-Auth is the only signer. Each pair credential is minted or re-minted solely by
-auth-microservice/scripts/provision-service-token.js and is delivered only by
-Vault -> ExternalSecret -> Kubernetes Secret -> secretKeyRef. Static tokens,
-API-key substitutes, self-signed tokens, and self-asserted service headers are
-not valid reporting authentication.

@@ -37,19 +37,6 @@ last_updated: 2026-09-04
 
 ## File Map
 
-| File | Action | Responsibility |
-|---|---|---|
-| `src/digest/service-health-snapshot.entity.ts` | Create | TypeORM entity for `monitoring.service_health_snapshots` |
-| `src/digest/digest.utils.ts` | Create | Pure functions: diff computation + Telegram message formatting (unit-testable) |
-| `src/digest/digest.utils.spec.ts` | Create | Jest unit tests for diff + format logic |
-| `src/digest/daily-digest.service.ts` | Create | Cron orchestrator: polls health, calls utils, persists snapshot, sends notification |
-| `src/digest/digest.module.ts` | Create | NestJS module wiring |
-| `src/common/notifications/notifications.client.ts` | Create | Thin axios HTTP client to notifications-microservice |
-| `src/app.module.ts` | Modify | Add `DigestModule` |
-| `src/config/configuration.ts` | Modify | Add `digest` config block |
-| `k8s/configmap.yaml` | Modify | Add `DAILY_DIGEST_ENABLED`, `DAILY_DIGEST_CRON`, `TELEGRAM_CHAT_ID` |
-| `k8s/external-secret.yaml` | Modify | Add `NOTIFICATION_SERVICE_TOKEN` |
-
 ---
 
 ## Task 1: Apply DB Migration
@@ -616,15 +603,6 @@ imports: [
 
 In `src/config/configuration.ts`, add at the end of the exported object:
 
-```typescript
-digest: {
-  enabled: process.env.DAILY_DIGEST_ENABLED !== 'false',
-  cron: process.env.DAILY_DIGEST_CRON || '0 8 * * *',
-  telegramChatId: process.env.TELEGRAM_CHAT_ID || '',
-  notificationsToken: process.env.NOTIFICATION_SERVICE_TOKEN || '',
-},
-```
-
 - [ ] **Step 3: Verify TypeScript compiles cleanly**
 
 ```bash
@@ -672,20 +650,7 @@ Replace `""` for `TELEGRAM_CHAT_ID` with your actual Telegram chat ID (the numer
 
 In `k8s/external-secret.yaml`, add inside the `spec.data:` array:
 
-```yaml
-    - secretKey: NOTIFICATION_SERVICE_TOKEN
-      remoteRef:
-        key: secret/prod/monitoring-microservice
-        property: NOTIFICATION_SERVICE_TOKEN
-```
-
 - [ ] **Step 3: Add the secret to Vault**
-
-```bash
-kubectl -n statex-apps exec deployment/monitoring-microservice -- \
-  vault kv patch secret/prod/monitoring-microservice \
-  NOTIFICATION_SERVICE_TOKEN="<token-value-from-notifications-microservice>"
-```
 
 To find the correct token value, check how other services authenticate to notifications-microservice:
 

@@ -12,7 +12,6 @@ correction note below before acting on the kube-state-metrics framing used earli
 The daily digest outage that preceded this lane is resolved and its plan is closed
 (`docs/superpowers/plans/2026-06-09-daily-health-digest.md`, status `done`).
 
-
 ## Ready next
 
 - **DONE 2026-09-04: flap damping and repeat backoff shipped (`284c9b8`, deployed as
@@ -137,17 +136,10 @@ The daily digest outage that preceded this lane is resolved and its plan is clos
   The catalog auth hardening of 2026-09-01 (`3fb296a`, `fc2f81c`, `c3614b5`) tightened both
   credential paths without updating this caller.
 
-
 - **DONE 2026-09-04: swept every `/api/logs` caller in the ecosystem. The payload defect is rare;
   a missing credential is the real epidemic.** 33 repos contain a caller. Verified with
   `logging-microservice/scripts/verify-ecosystem-logging.js` (read-only) plus per-service index
   queries, not by reading source alone.
-
-  **11 services log absolutely nothing, all for the same reason - no `LOGGING_SERVICE_TOKEN`:**
-  `domain-research`, `leads-microservice`, `invoices-microservice`, `ai-microservice`,
-  `shop-assistant`, `rent-a-box-api`, `heureka-service`, `allegro-service`, `bazos-service`,
-  `aukro-service`, `agentic-email-processing-system`. All have `LOGGING_SERVICE_URL` set, so they
-  believe they are logging; the endpoint answers 401 and each client's catch discards it.
 
   All 15 token-holding services checked (`auth`, `payments`, `orders`, `catalog`, `warehouse`,
   `suppliers`, `marketing`, `docs-rag`, `minio`, `backups`, `crypto-ai-agent`, `notifications`,
@@ -170,13 +162,10 @@ The daily digest outage that preceded this lane is resolved and its plan is clos
   Worth knowing: a bare probe returning 201 does not prove a service logs. Probe with the payload
   shape the service actually sends, and confirm the row comes back out of the index.
 
-
-
 ## Blocked
 
 Nothing is blocked. The lane decision that previously blocked the next implementation
 goal was taken on 2026-09-04 (alert and health-check noise reduction).
-
 
 ## Completed
 
@@ -235,9 +224,6 @@ goal was taken on 2026-09-04 (alert and health-check noise reduction).
   that this service could not write to the log index at all. Two independent defects, both
   hidden by `LoggingService.log()`'s bare `catch { return; }`:
 
-  1. **No Authorization header.** The client never sent one; `/api/logs` answers
-     401 `Logging ingest credential required`. Fixed in `50bd870`; the token was already
-     mounted as `LOGGING_SERVICE_TOKEN`.
   2. **Extras spread across the top level.** `LogEntryDto` sets `forbidNonWhitelisted`, so any
      unknown top-level key is a 400 `property <x> should not exist`. Every structured call this
      service makes carries extras (`daily_digest_failed` -> `{date, error}`), so even after the
@@ -266,9 +252,6 @@ goal was taken on 2026-09-04 (alert and health-check noise reduction).
   - *Slow dedup lookup exceeding the 8s client timeout* - ruled out. `notifications` holds 3,019
     rows in total (2026-05-05 .. 2026-09-04), so the 5-minute window lookup is trivial regardless
     of the single-column-only indexes.
-  - *Auth or a missing token* - ruled out. `NOTIFICATION_SERVICE_TOKEN` is set (64 chars) and
-    monitoring successfully created 6-142 notification rows through the same endpoint and the
-    same token on 08-28, 08-30, 08-31 and 09-03.
   - *notifications-microservice being unavailable at 08:00* - ruled out. The runlayer Orchestrator
     row was created at 08:00:00.03-08:00:00.20 on all five days.
   - *Channel-policy rejection in `resolveSendPolicy`* - ruled out. The digest sends no
@@ -286,10 +269,6 @@ goal was taken on 2026-09-04 (alert and health-check noise reduction).
 
   Per the owner decision above this is left as a supported inference: k8s events no longer retain
   that window and no pod from it survives, so it cannot be proven retrospectively.
-
-
-
-
 
 - **Owner decision taken 2026-09-04: alert and health-check noise reduction.** The lane is
   chosen and the queue decision is closed. Of the four candidate lanes this is the only one with
@@ -311,7 +290,6 @@ goal was taken on 2026-09-04 (alert and health-check noise reduction).
 - **Owner decision taken 2026-09-04: do not chase the unexplained HTTP 500.** The single probe
   against the pre-fix notifications pod (see Active, above) stays recorded but unpursued. Revisit
   only if 500s recur.
-
 
 ## Handoff
 

@@ -91,14 +91,6 @@ Upsert strategy: `INSERT ... ON CONFLICT (snapshot_date) DO UPDATE` — safe for
 ## Config & K8s Changes
 
 ### `configuration.ts` — new `digest` block
-```ts
-digest: {
-  enabled: process.env.DAILY_DIGEST_ENABLED !== 'false',
-  cron: process.env.DAILY_DIGEST_CRON || '0 8 * * *',
-  telegramChatId: process.env.TELEGRAM_CHAT_ID || '',
-  notificationsToken: process.env.NOTIFICATION_SERVICE_TOKEN || '',
-}
-```
 
 ### `k8s/configmap.yaml` — add
 ```yaml
@@ -108,12 +100,6 @@ TELEGRAM_CHAT_ID: "<your-chat-id>"
 ```
 
 ### `k8s/external-secret.yaml` — add
-```yaml
-- secretKey: NOTIFICATION_SERVICE_TOKEN
-  remoteRef:
-    key: secret/prod/monitoring-microservice
-    property: NOTIFICATION_SERVICE_TOKEN
-```
 
 ---
 
@@ -129,12 +115,6 @@ src/migrations/<timestamp>-CreateServiceHealthSnapshotsTable.ts
 ```
 
 ### Modified
-```
-src/app.module.ts             — add DigestModule
-src/config/configuration.ts   — add digest config block
-k8s/configmap.yaml            — add 3 env vars
-k8s/external-secret.yaml      — add NOTIFICATION_SERVICE_TOKEN
-```
 
 ---
 
