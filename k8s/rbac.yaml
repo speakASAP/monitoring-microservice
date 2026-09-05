@@ -46,6 +46,12 @@ rules:
   - apiGroups: [""]
     resources: ["pods/log"]
     verbs: ["get"]
+  # Rollout state, so repair verification can tell "the fix is running" from
+  # "the fix was committed". Read-only: this role never mutates workloads, so
+  # it cannot deploy, scale or delete anything it observes.
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["get", "list", "watch"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding

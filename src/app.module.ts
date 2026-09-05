@@ -5,6 +5,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ScheduleModule } from '@nestjs/schedule';
 import configuration from './config/configuration';
 import { HealthController } from './health/health.controller';
+import { RepairModule } from './repair/repair.module';
 import { AlertsModule } from './alerts/alerts.module';
 import { ServicesModule } from './services/services.module';
 import { DigestModule } from './digest/digest.module';
@@ -33,6 +34,7 @@ import { CustomerIntegrationsModule } from './customer-integrations/customer-int
       }),
     }),
     AlertsModule,
+    RepairModule,
     ServicesModule,
     DigestModule,
     MarathonMonitoringModule,

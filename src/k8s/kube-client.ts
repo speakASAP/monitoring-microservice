@@ -29,6 +29,12 @@ export interface CronJobSummary {
   uid: string;
 }
 
+export interface DeploymentRollout {
+  name: string;
+  ready: boolean;
+  detail: string;
+}
+
 export interface JobSummary {
   name: string;
   namespace: string;
@@ -149,6 +155,42 @@ export class KubeClient {
   }
 
   /** Pod names belonging to a Job, newest first. */
+  /**
+   * Rollout state of a Deployment: V1 of the repair verifier, which must
+   * distinguish "the fix is running" from "the fix was committed". Read-only,
+   * consistent with the read-only grant agreed in D1 -- this client never
+   * mutates cluster state.
+   *
+   * Returns null when the state cannot be read, so the caller can fail closed
+   * rather than treat an unreadable deployment as a successful one.
+   */
+  async getDeploymentRollout(namespace: string, name: string): Promise<DeploymentRollout | null> {
+    try {
+      const dep = await this.getJson<any>(
+        `/apis/apps/v1/namespaces/${namespace}/deployments/${name}`,
+      );
+      const spec = dep?.spec?.replicas ?? 0;
+      const status = dep?.status ?? {};
+      const updated = status.updatedReplicas ?? 0;
+      const ready = status.readyReplicas ?? 0;
+      const available = status.availableReplicas ?? 0;
+      const generationMatched =
+        (status.observedGeneration ?? -1) >= (dep?.metadata?.generation ?? 0);
+      const rolledOut =
+        generationMatched && updated >= spec && ready >= spec && available >= spec && spec > 0;
+      return {
+        name,
+        ready: rolledOut,
+        detail: `${ready}/${spec} ready, ${updated} updated, generation ${generationMatched ? 'current' : 'stale'}`,
+      };
+    } catch (err) {
+      this.logger.warn(
+        `[KubeClient] deployment rollout unreadable for ${namespace}/${name}: ${(err as Error).message}`,
+      );
+      return null;
+    }
+  }
+
   async listPodNamesForJob(namespace: string, jobName: string): Promise<string[]> {
     const selector = encodeURIComponent(`job-name=${jobName}`);
     const data = await this.getJson<any>(
