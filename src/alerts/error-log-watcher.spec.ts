@@ -42,6 +42,15 @@ describe('ErrorLogWatcher', () => {
     logs = {
       hasCredential: jest.fn().mockReturnValue(true),
       fetchErrorSummary: jest.fn().mockResolvedValue(summary()),
+      fetchCoverage: jest.fn().mockResolvedValue({
+        healthy: true,
+        stale_after_hours: 24,
+        shipping: [{ service: 'a', last_seen: '2026-09-05T11:00:00Z', age_hours: 1 }],
+        stale: [],
+        idle: [],
+        ignored: [],
+        missing: [],
+      }),
     };
     alerts = {
       fire: jest.fn().mockResolvedValue({ transition: 'fired', alert: { id: 'a1' }, notify: true }),
@@ -110,7 +119,13 @@ describe('ErrorLogWatcher', () => {
       summary({ groups: [], indexedSince: '2026-09-05T11:58:00.000Z' }),
     );
     await watcher.runCheck(NOW);
-    expect(alerts.resolveByFingerprint).not.toHaveBeenCalled();
+    // Scoped to error fingerprints on purpose. Ingest coverage is derived from
+    // file modification times rather than the in-memory index, so its own
+    // resolution is unaffected by how long the index has been warm.
+    const errorResolves = alerts.resolveByFingerprint.mock.calls.filter(
+      (c: any[]) => String(c[0]).startsWith('errorlog:'),
+    );
+    expect(errorResolves).toHaveLength(0);
   });
 
   it('does not resolve or beat when the summary cannot be fetched', async () => {
@@ -120,7 +135,11 @@ describe('ErrorLogWatcher', () => {
     heartbeat.beat.mockClear();
     logs.fetchErrorSummary.mockResolvedValue(null);
     await watcher.runCheck(NOW);
-    expect(alerts.resolveByFingerprint).not.toHaveBeenCalled();
+    expect(
+      alerts.resolveByFingerprint.mock.calls.filter((c: any[]) =>
+        String(c[0]).startsWith('errorlog:'),
+      ),
+    ).toHaveLength(0);
     expect(heartbeat.beat).not.toHaveBeenCalled();
     expect(heartbeat.fail).toHaveBeenCalled();
   });
@@ -185,5 +204,66 @@ describe('ErrorLogWatcher', () => {
     logs.fetchErrorSummary.mockResolvedValue(summary({ truncated: true }));
     await watcher.runCheck(NOW);
     expect(alerts.fire.mock.calls[0][0].message).toContain('at least');
+  });
+
+  describe('log ingest coverage', () => {
+    const staleCoverage = {
+      healthy: false,
+      stale_after_hours: 24,
+      shipping: [],
+      stale: [
+        { service: 'api-gateway', last_seen: '2026-08-13T06:58:56Z', age_hours: 560.5 },
+        { service: 'docs-rag-microservice', last_seen: '2026-07-06T19:22:52Z', age_hours: 1460.1 },
+      ],
+      idle: [],
+      ignored: [],
+      missing: [],
+    };
+
+    it('alerts when services have stopped shipping logs entirely', async () => {
+      // Without this the watcher asserts those services are fine forever,
+      // because silence is indistinguishable from health.
+      logs.fetchCoverage.mockResolvedValue(staleCoverage);
+      await watcher.runCheck(NOW);
+      const call = alerts.fire.mock.calls.find((c: any[]) => c[0].alertname === 'LogIngestStale');
+      expect(call).toBeDefined();
+      expect(call[0].message).toContain('api-gateway');
+      expect(call[0].message).toContain('docs-rag-microservice');
+    });
+
+    it('raises one aggregate alert, not one per stale service', async () => {
+      // Eight simultaneous messages for a weeks-old condition is how a channel
+      // gets muted.
+      logs.fetchCoverage.mockResolvedValue(staleCoverage);
+      await watcher.runCheck(NOW);
+      const staleCalls = alerts.fire.mock.calls.filter(
+        (c: any[]) => c[0].alertname === 'LogIngestStale',
+      );
+      expect(staleCalls).toHaveLength(1);
+    });
+
+    it('closes the alert once every service is shipping again', async () => {
+      await watcher.runCheck(NOW);
+      expect(alerts.resolveByFingerprint).toHaveBeenCalledWith('logingest:stale');
+    });
+
+    it('stays silent when coverage cannot be read', async () => {
+      // Must not announce that ingest is fine on the strength of a failed call.
+      logs.fetchCoverage.mockResolvedValue(null);
+      await watcher.runCheck(NOW);
+      const staleCalls = alerts.fire.mock.calls.filter(
+        (c: any[]) => c[0].alertname === 'LogIngestStale',
+      );
+      expect(staleCalls).toHaveLength(0);
+      expect(alerts.resolveByFingerprint).not.toHaveBeenCalledWith('logingest:stale');
+    });
+
+    it('lists the worst offender first', async () => {
+      logs.fetchCoverage.mockResolvedValue(staleCoverage);
+      await watcher.runCheck(NOW);
+      const call = alerts.fire.mock.calls.find((c: any[]) => c[0].alertname === 'LogIngestStale');
+      const msg = call[0].message as string;
+      expect(msg.indexOf('docs-rag-microservice')).toBeLessThan(msg.indexOf('api-gateway'));
+    });
   });
 });

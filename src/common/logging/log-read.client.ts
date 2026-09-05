@@ -35,6 +35,22 @@ export interface ErrorSummary {
  * was a caller whose credential had quietly stopped matching, and a token that
  * must be rotated to keep alerting alive is a scheduled outage.
  */
+export interface CoverageEntry {
+  service: string;
+  last_seen: string;
+  age_hours: number;
+}
+
+export interface CoverageReport {
+  healthy: boolean;
+  stale_after_hours: number;
+  shipping: CoverageEntry[];
+  stale: CoverageEntry[];
+  idle: CoverageEntry[];
+  ignored: string[];
+  missing: string[];
+}
+
 @Injectable()
 export class LogReadClient {
   private readonly logger = new Logger(LogReadClient.name);
@@ -78,6 +94,41 @@ export class LogReadClient {
       return body.data;
     } catch (err: any) {
       this.logger.error(`[LogReadClient] error-summary failed: ${err?.message ?? String(err)}`);
+      return null;
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  /**
+   * Which services are still shipping logs, and which have gone quiet.
+   *
+   * Cheap: this reads file modification times, not file contents — measured at
+   * 7ms against the 37 seconds a content query costs. Safe to poll.
+   *
+   * Returns 503 when the pipeline is degraded, which is the normal case while
+   * anything is stale, so the body is read on both 200 and 503. Treating 503 as
+   * a failure here would discard exactly the report worth having.
+   */
+  async fetchCoverage(): Promise<CoverageReport | null> {
+    if (!this.token) return null;
+
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), this.timeoutMs);
+    try {
+      const res = await fetch(`${this.url}/api/logs/coverage`, {
+        headers: { Authorization: `Bearer ${this.token}` },
+        signal: controller.signal,
+      });
+      if (res.status !== 200 && res.status !== 503) {
+        this.logger.error(`[LogReadClient] coverage returned ${res.status}`);
+        return null;
+      }
+      const body = (await res.json()) as { data?: CoverageReport };
+      if (!body?.data || !Array.isArray(body.data.stale)) return null;
+      return body.data;
+    } catch (err: any) {
+      this.logger.error(`[LogReadClient] coverage failed: ${err?.message ?? String(err)}`);
       return null;
     } finally {
       clearTimeout(timer);

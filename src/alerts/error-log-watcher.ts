@@ -141,6 +141,8 @@ export class ErrorLogWatcher {
         );
       }
 
+      await this.checkIngestCoverage();
+
       this.heartbeat.beat(ERROR_LOG_WATCHER_NAME);
     } catch (err: any) {
       const detail = err?.message ?? String(err);
@@ -148,6 +150,67 @@ export class ErrorLogWatcher {
       await this.logging.log('error', 'error_log_sweep_failed', { error: detail });
       this.heartbeat.fail(ERROR_LOG_WATCHER_NAME, detail);
     }
+  }
+
+  /**
+   * Alert when a service stops shipping logs at all.
+   *
+   * This watcher can only see services that send logs. Eight currently do not
+   * -- api-gateway last shipped 560 hours ago, docs-rag-microservice 1460 --
+   * and for every one of them "no errors reported" is produced by silence, not
+   * by health. Without this check the watcher would quietly assert those
+   * services are fine forever, which is the same false-confidence bug it was
+   * built to remove, one level up.
+   *
+   * Raised as a single aggregate alert rather than one per service. Eight
+   * simultaneous messages for a condition that has persisted for weeks is how a
+   * channel gets muted; one message naming all eight is equally actionable and
+   * costs one notification. As services are fixed the list shrinks, and the
+   * alert closes when it empties.
+   */
+  private async checkIngestCoverage(): Promise<void> {
+    const coverage = await this.logs.fetchCoverage();
+    // Could not ask. Say nothing rather than announce that ingest is fine.
+    if (!coverage) return;
+
+    const fingerprint = 'logingest:stale';
+    const stale = (coverage.stale || [])
+      .slice()
+      .sort((a, b) => (b.age_hours || 0) - (a.age_hours || 0));
+
+    if (stale.length === 0) {
+      await this.alerts.resolveByFingerprint(fingerprint);
+      return;
+    }
+
+    const lines = stale
+      .map((s) => `  • ${s.service} — last log ${Math.round(s.age_hours)}h ago`)
+      .join('\n');
+    const message =
+      `${stale.length} service(s) have stopped shipping logs ` +
+      `(stale after ${coverage.stale_after_hours}h). Error alerting is blind to them:\n${lines}`;
+
+    const { transition, alert, notify } = await this.alerts.fire({
+      alertname: 'LogIngestStale',
+      service: 'logging-microservice',
+      severity: 'warning',
+      message,
+      fingerprint,
+      labels: JSON.stringify({
+        kind: 'logingest',
+        staleServices: stale.map((s) => s.service),
+        staleAfterHours: coverage.stale_after_hours,
+        shippingCount: (coverage.shipping || []).length,
+      }),
+    });
+
+    if (!notify) return;
+    const active = await this.alerts.findActive();
+    await this.notifications.sendTelegram(
+      transition === 'repeat'
+        ? this.notifier.formatRepeat(alert, active)
+        : this.notifier.formatFired(alert, active),
+    );
   }
 
   private fingerprintFor(group: ErrorGroup): string {
