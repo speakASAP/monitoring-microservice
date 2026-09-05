@@ -59,7 +59,7 @@ misconfiguration into a credential re-issue on a security surface if left until 
 ## 2. Authentication reconciliation
 
 The earlier static-credential diagnosis is removed. Scheduled work is an
-independent caller and must follow the sole [Service Identity Consumer Standard](https://github.com/speakASAP/auth-microservice/blob/main/docs/SERVICE_IDENTITY_CONSUMER_STANDARD.md).
+independent caller and must follow the sole [Service Identity Consumer Standard](../../../auth-microservice/docs/SERVICE_IDENTITY_CONSUMER_STANDARD.md).
 Runtime code and configuration remain to be reconciled separately.
 
 ## 3. New findings
