@@ -51,16 +51,12 @@ source**, and a decision on **whether and how to close the loop to automated rep
 
 ---
 
-## 2. Authentication finding
+## 2. Authentication scope
 
-The prior probe depended on a legacy static credential and self-asserted caller
-identity. That path is not a valid remediation or monitoring contract. The
-CronJob requires its own Auth-registered caller-to-catalog-microservice RS256
-principal, delivered through Vault -> ExternalSecret -> Kubernetes Secret ->
-secretKeyRef, and its rotation must prove catalog acceptance. The required
-receiver enforcement and route role are governed solely by
-auth-microservice/docs/SERVICE_IDENTITY_CONSUMER_STANDARD.md. The required
-runtime remediation is outside this assessment and remains unimplemented.
+Machine identity is governed exclusively by the canonical
+[`SERVICE_IDENTITY_CONSUMER_STANDARD.md`](../../../auth-microservice/docs/SERVICE_IDENTITY_CONSUMER_STANDARD.md).
+The required runtime remediation is outside this assessment and remains
+unimplemented.
 
 ## 3. Inventory: what runs on a schedule
 
