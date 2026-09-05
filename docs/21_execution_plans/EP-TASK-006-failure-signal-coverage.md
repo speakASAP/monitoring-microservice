@@ -2,21 +2,21 @@
 
 ```yaml
 id: EP-TASK-006
-status: draft
+status: approved
 source_task: TO BE CREATED ON APPROVAL (docs/11_tasks/TASK-006-failure-signal-coverage.md)
-owner: unassigned — pending owner approval
+owner: unassigned — decisions approved 2026-09-05, implementation owner TBD
 created: 2026-09-05
 last_updated: 2026-09-05
-completeness_level: draft
+completeness_level: approved-for-implementation
 ```
 
 ## Metadata
 
-**Status:** DRAFT — proposal for review. **No code, config or cluster state has been
-changed.** The IPS chain (task, milestone, feature, goal-impact, context package) is
-deliberately *not* created yet: §2 contains four decisions that change the shape of the
-work, and manufacturing the chain before they are answered would encode guesses as
-traceability.
+**Status:** APPROVED 2026-09-05. All four blocking decisions are answered by the owner and
+recorded in §2. **No code, config or cluster state has been changed by this document.**
+The IPS chain (task, milestone, feature, goal-impact, context package) should now be
+created as the first implementation step, since the decisions that would have made it
+guesswork are settled.
 
 **Evidence base:** [`docs/09_assessments/2026-09-04-silent-failure-assessment.md`](../09_assessments/2026-09-04-silent-failure-assessment.md)
 and [`docs/09_assessments/2026-09-05-silent-failure-assessment.md`](../09_assessments/2026-09-05-silent-failure-assessment.md).
@@ -78,76 +78,115 @@ errors" a property of the system rather than a description of this quarter.
 
 ---
 
-## 2. Decisions required before implementation
+## 2. Decisions — RESOLVED by owner, 2026-09-05
 
-These four cannot be resolved by research; they are owner or reviewer judgement. Work on
-the dependent phases must not start until each is answered. Recommendations are given, with
-the evidence that supports them.
+All four blocking decisions are answered. Recorded verbatim in intent, with the
+consequences each one has on the phases below.
 
-### D1. May `monitoring-microservice` hold Kubernetes read access? — **blocks Phase 2**
+### D1 — Kubernetes read access: **APPROVED. Option A.**
 
-It runs with **no ServiceAccount at all** today and is publicly ingressed at
-`monitoring.alfares.cz` (`09-05 §3.5`). So this is not "extend a role"; it is "introduce a
-cluster-scoped identity to an internet-facing service".
+> *"monitoring-microservice can have Kubernetes read access. So introduce a cluster-scoped
+> identity. Agree. Use option A. K8s API poll."*
 
-| Option | Sees crash / OOM / never-started? | New security surface | Placement |
-| --- | --- | --- | --- |
-| **A. K8s API poll** from monitoring | **yes** | ServiceAccount + ClusterRole (`batch/jobs`, `batch/cronjobs`, `pods`: get/list) on an ingressed pod | matches owner's stated placement |
-| **B. Jobs self-report** | **no** — a job that dies reports nothing | none | edits in 8 repos |
-| **C. Host-side guard** (systemd timer + node kubectl) | **yes** | none — no new identity | outside monitoring, conflicts with stated placement |
+Phase 2 proceeds as a Kubernetes API poller inside `monitoring-microservice`. Fallback
+option C (host-side guard) is dropped.
 
-**Recommendation: A, narrowed.** B cannot detect the failures that matter most
-(`09-04 §7.1`). C is the proven local pattern (`token-health`) but puts the capability
-outside the service the owner named. A can be narrowed to read-only verbs on `batch/*` and
-`pods`, modelled on the existing reviewed `pod-janitor` ClusterRole (`09-05 §3.4`).
-**If D1 is refused, Phase 2 switches to C** and the rest of the plan is unaffected — this
-is a placement decision, not an architecture decision.
+**Consequences.** A `ServiceAccount`, `ClusterRole` and `ClusterRoleBinding` must be added
+to `k8s/` — the service has none today (`09-05 §3.5`). Because the pod is publicly ingressed
+at `monitoring.alfares.cz`, the grant must be minimal and reviewable:
 
-### D2. Where do these alerts land? — **blocks every phase**
+- Verbs limited to `get`, `list`, `watch`. **No `create`, `update`, `patch`, `delete`.**
+- Resources limited to `batch/cronjobs`, `batch/jobs`, `pods`, `pods/log`.
+- Modelled on the existing reviewed `pod-janitor` ClusterRole, which already grants
+  `batch/jobs: get,list` (`09-05 §3.4`).
+- `pods/log` is required by invariant I2 (evidence capture) and is the widest part of the
+  grant — it can read any pod's logs in the cluster. Call it out explicitly in review rather
+  than letting it arrive bundled.
 
-Everything currently lands in one owner chat: daily digest, deploy failures, token
-findings, ingest staleness, health alerts (`09-04 §4.3`). A `DeployFailed / domain-research`
-alert fired at 10:02 on 2026-09-05 and was **still `active` and unacknowledged** hours
-later (`09-05 §3.3`) — weak but real evidence the channel is already under-read.
+### D2 — Alert destination: **single Telegram chat, unchanged.**
 
-Adding three new alert streams to that chat risks the mute-the-channel failure that
-`token-health-guard.sh` explicitly warns about. **Recommendation: severity routing to
-separate Telegram topics** — `critical` (paging), `warning` (working stream), `digest`
-(daily) — reusing the existing bot and borrowing credentials the way `notify.sh` does,
-rather than minting a second credential (`09-04 §4.3`). Resolve the possible 08:00
-double-digest (`09-04 §4.4`) in the same pass.
+> *"use the same Telegram for all the messages."*
 
-### D3. How far does automated remediation go? — **blocks Phase 5**
+No routing, no new topics, no second credential. Phase 0 loses its routing workstream.
 
-The trigger incident is a counter-example to naive auto-fix. The correct remedy is a
-deliberate security-allowlist judgement plus a credential re-issue on an admin-capable
-token (`09-05 §3.1`, `§3.2`) — exactly the judgement `b99a38c` and `3fb296a` were written
-to force a human to make. An agent optimising for "make the 401 go away" would reverse a
-security hardening (`09-04 §6.3`).
+**Consequences — this raises the stakes on noise discipline rather than removing them.**
+The chat already carries the daily digest, deploy failures, token findings, ingest
+staleness and health alerts, and a `DeployFailed / domain-research` alert stood
+unacknowledged for hours on 2026-09-05 (`09-05 §3.3`). Since routing will not absorb the
+new volume, the transition-only invariant (I1) and the shipped repeat-backoff are now the
+**only** things standing between this work and a muted channel. Concretely:
 
-There is also a **reachability problem** that must be answered honestly before effort is
-committed (`09-05 §Q-B`): roughly half of plausible job failures are credential expiry or
-identity rejection — all security surfaces, all excluded from auto-fix. If the common case
-is out of scope, what fraction of "start fixing automatically" is actually attainable?
+- No adapter may notify on an occurrence; only on a state transition. Non-negotiable.
+- All four adapters reuse `AlertsService.fire()` and its existing dedup, flap damping and
+  escalating backoff. No adapter gets its own sender.
+- Phase 0 retains the double-digest fix — with one chat, two 08:00 digests are pure noise.
+- Add a volume check to the Phase 6 sweep: if daily message count exceeds a threshold, that
+  is itself a finding. The 2026-08 incident ran at 46–144 msgs/day against a ~6/day
+  baseline (`TASKS.md`); nothing currently measures that automatically.
 
-**Recommendation: triage automatically, repair under gate.** Alert → auto-open a runlayer
-goal / GitHub issue carrying captured evidence → agent produces a diff and a PR → human
-approves the merge. This closes the "nobody knows" gap entirely and most of the "nobody
-starts" gap, keeps humans on security surfaces, and reuses `goal-review.service.ts`'s
-existing `gh pr create` path rather than inventing one (`09-04 §6.1`, `§6.3`).
+### D3 — Remediation depth: **autonomous repair, verified by outcome. No PR, no human gate.**
 
-### D4. Is repairing log ingestion a prerequisite or a parallel lane? — **blocks Phase 3**
+> *"agree with the recommendation: triage automatically, repair under gate for opening
+> runlayer goal. But no PR needed - no human involvement needed. Check if service works,
+> check the logs after service fix. Errors should disappear after the fix."*
 
-`speakasap` is still being rejected with `missing_credential` **today**, despite TASK-LOG-005
-being marked complete on 2026-09-04 (`09-05 §4.1`). Eleven services were found shipping
-nothing at all (`09-04 §4.2 pt2`).
+The human merge gate is removed. The loop closes end to end: **detect → alert → runlayer
+goal → agent fixes → deploy → verify → confirm or roll back.**
 
-**Recommendation: prerequisite.** Error-log alerting on top of broken ingestion produces a
-system that is *confidently silent for the wrong reason* — precisely the 2026-07-06 failure,
-repeated with more machinery. Any rule of the form "no errors seen ⇒ healthy" is unsound
-until ingestion is trustworthy.
+**The gate is not deleted; it is replaced.** The owner has substituted an *outcome* gate for
+a *human* gate: a fix is accepted only if the service works and the errors actually stop.
+That is a stronger control than a rubber-stamped PR, but only if the verification is real
+and the failure path is automatic. Phase 5b is therefore rewritten around a
+**verify-or-revert loop** (see below), not around unattended commits.
 
----
+**One risk the owner should hold explicitly** (raised once here, not re-litigated): the
+incident that started this work is a case where the correct fix is a deliberate
+security-allowlist judgement, and where the cheapest fix — widening an allowlist to an
+admin-capable identity — would reverse a `fix(security)` hardening while making the symptom
+disappear (`09-05 §3.2`). **An outcome gate cannot catch that**, because the wrong fix
+passes the outcome test: the 401 stops, the service works, the errors vanish.
+
+The `auto_fix_eligible` flag in the Phase 1 ledger is therefore retained as the containment
+primitive, and is now the *only* one. Recommended default: surfaces whose last change was a
+`fix(security)` commit, and any surface touching auth guards, allowlists, RBAC or token
+issuance, are marked ineligible and produce an alert plus a goal for a human, but no
+autonomous commit. Everything else runs the full loop. **If the owner wants those included
+too, that is a separate explicit decision** — it should not arrive by default.
+
+### D4 — Log-ingestion repair: **rechecked, still broken, deprioritised by owner.**
+
+> *"'speakasap' seems to be redeployed so issue should be fixed. Recheck it. If not, ignore
+> for now."*
+
+**Rechecked 2026-09-05 13:36 UTC. Not fixed.** Measured:
+
+- `speakasap` accounts for **1,958 of the last 2,000** logging-microservice log lines, all
+  `log_ingest_rejected / missing_credential`. Most recent: `2026-09-05T13:36:04Z`.
+- Seven other services are rejected in the same window: `flipflop-api-gateway`,
+  `bazos-service`, `aukro-service`, `allegro-service` (8 each), `invoices-microservice`,
+  `heureka-service` (4 each), `runlayer` (2).
+- **The redeploy could not have fixed it.** The `speakasap` deployment was rolled 25h ago
+  (pods 25h old, image `bc208fd`) but carries **no `LOG*` environment variable at all**, and
+  none of its secrets contain a `LOGGING_*` key. The credential was never provisioned, so
+  no redeploy of the same manifest can change the outcome. This is a missing-secret defect,
+  not a stale-image defect.
+
+Per the owner's instruction, this is **not a blocker** and no repair work is scheduled here.
+Two consequences carry into Phase 3 and must not be lost:
+
+1. **Phase 3 is scoped to services that demonstrably ship logs.** Error-log rules are built
+   only for senders with confirmed successful ingest, enumerated at build time from
+   `GET /api/logs/services`. Services in the rejected set are out of scope until credentialed.
+2. **The "no errors ⇒ healthy" rule remains permanently forbidden** (I1 corollary). With
+   ingestion knowingly broken for at least eight services, absence of error logs carries no
+   information whatsoever. This constraint outlives the D4 deferral.
+
+A third consequence touches D3: the owner's verification step — *"check the logs after
+service fix, errors should disappear"* — **cannot be evaluated for any service that is not
+shipping logs**. Phase 5b's verification must treat "target service has no working log
+ingest" as **verification-failed**, not as verification-passed. Otherwise a silent sender
+would make every autonomous fix appear to succeed. This is the single most dangerous
+interaction between D3 and D4.
 
 ## 3. Target architecture
 
@@ -160,14 +199,14 @@ adapters already exists and is running.
   ┌──────────────────────┐
   │ K8s Jobs/CronJobs    │──┐
   │  (Phase 2)           │  │
-  ├──────────────────────┤  │    ┌─────────────┐    ┌──────────────┐    ┌───────────┐    ┌──────────────┐
+  ├──────────────────────┤  │    ┌──────────────┐    ┌──────────────┐    ┌─────────────┐   ┌──────────────┐
   │ logging-microservice │──┼───▶│ FailureSignal│───▶│ AlertsService│───▶│Notifications│──▶│ runlayer goal│
-  │  error rules (Ph.3)  │  │    │  {source,    │    │  .fire()     │    │  Telegram   │   │  / gh issue  │
+  │  error rules (Ph.3)  │  │    │  {source,    │    │  .fire()     │    │  Telegram   │   │              │
   ├──────────────────────┤  │    │ fingerprint, │    │              │    │  (routed    │   │  (Phase 5,   │
   │ host cron / systemd  │──┤    │ severity,    │    │ dedup, flap, │    │   per D2)   │   │   under D3   │
-  │  (Phase 4)           │  │    │ evidence}    │    │ backoff,     │    └──────────────┘   │   gate)      │
-  ├──────────────────────┤  │    └─────────────┘    │ resolve      │                        └──────────────┘
-  │ self-heartbeat       │──┘                       └──────────────┘
+  │  (Phase 4)           │  │    │ evidence}    │    │ backoff,     │    └─────────────┘   │   gate)      │
+  ├──────────────────────┤  │    └──────────────┘    │ resolve      │                      └──────────────┘
+  │ self-heartbeat       │──┘                        └──────────────┘
   │  (Phase 5)           │                                 │
   └──────────────────────┘                                 ▼
                                                     monitoring.alerts
@@ -208,25 +247,26 @@ source-agnostic and Phase 6's ledger has something uniform to count:
 Phases are ordered by **trust dependency**, not by effort. Each has an explicit exit test
 that can be run by a reviewer.
 
-### Phase 0 — Establish trust in the channel *(prerequisite for all)*
+### Phase 0 — Channel hygiene *(prerequisite for all)*
 
-Depends on: **D2**.
+D2 resolved to a single chat, so this phase no longer builds routing. What remains is
+ensuring the one channel is not already degraded before three new streams enter it.
 
-Nothing else should ship into a channel that is already at risk of being muted.
+1. **Resolve the 08:00 double-digest.** Monitoring's `DailyDigestService` and the host
+   `statex-ecosystem-digest.timer` both post to the same chat (`09-04 §4.4`). With one
+   destination this is unambiguous noise.
+2. **Triage the standing `active` `DeployFailed / domain-research` alert** (`09-05 §3.3`).
+   An alert that stands unacknowledged is evidence the channel is under-read; clear it and
+   note whether it was ever seen.
+3. **Correct `shared/ECOSYSTEM_MAP.md`**, which advertises Grafana at `grafana.alfares.cz`
+   that exists nowhere in the cluster or in Docker (`09-05 §3.6`). The map is read order #2
+   in `AGENTS.md`, so it actively misinforms agents into believing metric-based alerting
+   already covers this gap.
+4. **Baseline the message volume.** Record current messages/day before adding sources, so
+   the Phase 6 volume check (per D2) has a reference point rather than a guessed threshold.
 
-1. Implement severity routing (per D2), reusing the existing bot and the `notify.sh`
-   credential-borrowing rule (`09-04 §4.3`).
-2. Resolve the 08:00 double-digest — monitoring's `DailyDigestService` and the host
-   `statex-ecosystem-digest.timer` both post to the same chat (`09-04 §4.4`).
-3. Triage the standing `active` `DeployFailed / domain-research` alert (`09-05 §3.3`).
-4. Correct `shared/ECOSYSTEM_MAP.md`, which still advertises Grafana at
-   `grafana.alfares.cz` that exists nowhere in the cluster or Docker (`09-05 §3.6`). The
-   map is read order #2 in `AGENTS.md`, so this actively misinforms reviewing agents into
-   believing metric-based alerting already covers this gap.
-
-**Exit test:** a `critical` and a `warning` test alert arrive in distinguishable
-destinations; exactly one digest arrives at 08:00; `ECOSYSTEM_MAP.md` matches
-`kubectl get ingress -A`.
+**Exit test:** exactly one digest arrives at 08:00; no alert is standing unacknowledged;
+`ECOSYSTEM_MAP.md` matches `kubectl get ingress -A`; a baseline volume figure is recorded.
 
 ### Phase 1 — The coverage ledger *(the spine of the whole plan)*
 
@@ -258,7 +298,7 @@ crontab entries, 8 of 9 systemd timers — without those being hardcoded into it
 
 ### Phase 2 — Kubernetes Job / CronJob watcher *(closes the trigger class)*
 
-Depends on: **D1**, Phase 0.
+Depends on: **D1 (approved — option A)**, Phase 0.
 
 A new watcher in `monitoring-microservice` alongside `HealthWatcher`, same `@Cron` pattern,
 same `AlertsService.fire()` sink.
@@ -286,36 +326,40 @@ same `AlertsService.fire()` sink.
 the `product-search 401` verdict in its body; and the four CronJobs that had transient
 failures in the preceding eight days produce **zero** alerts.
 
-### Phase 3 — Error-log rules *(the owner's stated preference, honestly bounded)*
+### Phase 3 — Error-log rules *(bounded by what actually ships)*
 
-Depends on: **D4**, Phase 0.
+Depends on: Phase 0. **D4 resolved: ingestion repair is deferred, so this phase is scoped
+down rather than blocked.**
 
-The owner asked for this to be built "on the monitoring side using logs-microservice". That
-is right about the owner and **cannot be satisfied literally for job outcomes**: there is no
+The owner asked for this built "on the monitoring side using logs-microservice". That is
+right about the owner and **cannot be satisfied literally for job outcomes**: there is no
 DaemonSet collector anywhere in the cluster, by a recorded 2026-08-17 decision, so CronJob
 stdout never reaches logging-microservice (`09-05 §4.1`). Phase 2 exists precisely because
 Phase 3 structurally cannot cover that class.
 
-What Phase 3 *can* cover: sustained error output from long-running services that already
-POST logs.
+What Phase 3 covers: sustained error output from long-running services that **demonstrably
+ship logs today**.
 
-- **After D4 is satisfied** — ingestion repaired, `speakasap` and the 11 silent services
-  shipping.
-- Poll `GET /api/logs/query?level=error` on a rules interval. Note the cost: queries are
-  line-by-line scans of rotated JSON files with **no index** on `level`, `service` or
-  `timestamp` (`09-04 §4.2 pt4`). Rule cadence is a capacity question — measure before
-  choosing. If scan cost proves prohibitive, adding an index to logging-microservice is a
-  smaller change than any alternative and should be preferred over polling less often.
-- **Transition semantics (I1):** alert on *error rate crossing a threshold and staying
-  there*, not on any error line. Reuse the existing fingerprint/backoff machinery.
-- **Explicitly do not** implement a "no errors ⇒ healthy" rule. Absence of error logs
-  currently means nothing (`09-05 §4.1`), and such a rule would re-create the 2026-07-06
-  incident with more machinery. Sender liveness is already covered by
-  `check-ingest-staleness.sh` and should remain the answer to that question.
+- **Scope by measurement, not by registry.** Enumerate eligible senders from
+  `GET /api/logs/services` — services with confirmed successful ingest. The eight services
+  currently rejected (`speakasap` and seven others, `09-05 D4`) are **out of scope** until
+  credentialed. Recording them as out-of-scope in the Phase 1 ledger with
+  `failure_destination: none` is what keeps the deferral visible instead of forgotten.
+- **Transition semantics (I1):** alert when an error rate crosses a threshold *and stays
+  there*, never on an error line. Reuse the existing fingerprint and backoff machinery —
+  under D2's single chat this is the primary noise control.
+- **Never implement "no errors ⇒ healthy."** With ingestion knowingly broken for at least
+  eight services, absence of error logs carries no information (`09-05 §4.1`). Such a rule
+  would re-create the 2026-07-06 incident with more machinery. Sender liveness is already
+  answered by `check-ingest-staleness.sh` and should stay there.
+- **Query cost is a real constraint.** Queries are line-by-line scans of rotated JSON files
+  with no index on `level`, `service` or `timestamp` (`09-04 §4.2 pt4`). Measure before
+  choosing cadence; if scan cost is prohibitive, adding an index to logging-microservice is
+  a smaller change than any alternative and is preferable to polling less often.
 
 **Exit test:** a service deliberately emitting sustained errors raises exactly one alert
-that escalates on the existing backoff schedule; a service emitting an occasional single
-error raises none.
+that escalates on the existing backoff schedule; an occasional single error raises none; a
+service known to be rejected at ingest is reported as out-of-scope rather than as healthy.
 
 ### Phase 4 — Host-scheduled work
 
@@ -337,35 +381,85 @@ non-interactively (`CONTROL_TERMINAL.md`); these are **user** units under
 **Exit test:** deliberately failing a non-critical timer produces a Telegram alert; the
 ledger shows zero `host-timer` surfaces with `failure_destination: none`.
 
-### Phase 5 — Self-watch, then gated remediation
+### Phase 5 — Self-watch, then autonomous verified repair
 
-Depends on: **D3**, Phases 2–4.
+Depends on: **D3 (resolved)**, Phases 2–4.
 
-**5a — Dead-man's switch (do this first, unconditionally).** Every adapter emits a
+**5a — Dead-man's switch (unconditional, ships with Phase 2).** Every adapter emits a
 heartbeat (I3); absence of a heartbeat within a window is itself an alert. A job-failure
 watcher that dies silently is the same incident one level up, and `HealthWatcher` does not
-monitor itself (`09-04 §7.6`). **Phase 5a must ship before or with Phase 2 — not after.**
-A watcher whose own death is invisible is only a redistribution of the problem.
+monitor itself (`09-04 §7.6`). This becomes *more* important under D3, not less: an
+autonomous repair loop whose detector is dead will report nothing while believing all is
+well.
 
-**5b — Remediation, at the depth D3 permits.** Under the recommended "triage
-automatically, repair under gate":
+**5b — Autonomous repair with an outcome gate.** Per D3 there is no PR and no human
+approval. The control is that a fix must **prove itself against reality** and revert
+automatically if it cannot. The loop:
 
-- On a `critical` alert whose surface is `auto_fix_eligible` in the ledger, create a
-  runlayer goal via `POST /projects/:projectId/goals` (`09-04 §6.1`) carrying the captured
-  evidence, or open a GitHub issue via the existing `goal-review.service.ts` path.
-- **Dedup key = the alert fingerprint**, so a flapping detector cannot open a goal per
-  cycle. Monitoring's fingerprint dedup and runlayer's `LOOPING_GOAL_CYCLE_LIMIT` both
-  exist but *have never been composed* (`09-04 §6.3`) — composing them is real work, not a
-  configuration step.
-- **Security surfaces are excluded by the ledger**, not by agent judgement. `fix(security)`
-  surfaces set `auto_fix_eligible: false`. The trigger incident is the worked example of why
-  (`09-05 §3.2`).
-- Human approves the merge. No automated change reaches production unreviewed.
+```
+  alert fires (fingerprint F, surface S, evidence E)
+        │
+        ├─ S.auto_fix_eligible == false ──▶ alert + goal for a human. STOP. No commit.
+        │
+        ▼
+  create runlayer goal (dedup key = F)   POST /projects/:projectId/goals
+        │
+        ▼
+  agent produces fix ──▶ commit ──▶ deploy queue (serialized, existing lock)
+        │
+        ▼
+  ┌─ VERIFY ─────────────────────────────────────────────────────────┐
+  │ V1  deployment rolled out       shared/scripts/wait-for-rollout.sh│
+  │ V2  service answers /health     existing HealthWatcher probe      │
+  │ V3  the original signal cleared for S:                            │
+  │       k8s-job    → a new run completes; lastSuccessfulTime moves   │
+  │       error-log  → error rate returns to baseline over window W    │
+  │ V4  no NEW alert appeared on any other surface (blast-radius check)│
+  └───────────────────────────────────────────────────────────────────┘
+        │
+   all pass ──▶ resolve F. Post outcome to Telegram. Close goal.
+        │
+   any fail ──▶ REVERT the commit, redeploy last-known-good,
+                re-fire F at critical with "autonomous fix failed",
+                mark S ineligible for N hours. Do not retry blindly.
+```
 
-**Exit test:** a synthetic failure on an eligible surface produces one alert and exactly one
-goal/issue with evidence attached; a repeat within the backoff window produces neither a
-second goal nor a second issue; a failure on an ineligible surface produces an alert and
-**no** automated action.
+Design requirements, each traceable to measured evidence:
+
+- **V3 is the owner's stated test** — *"check if service works, check the logs after service
+  fix; errors should disappear."* V2 is "service works"; V3 is "errors disappear". Both are
+  required; neither alone is sufficient. A service can be healthy while its job still fails,
+  which is exactly the present incident.
+- **V3 must fail closed when it cannot observe.** If the target service has no working log
+  ingest, verification is **failed**, not passed (D4 consequence 3). Otherwise the eight
+  services currently rejected at ingest would make every fix look successful. This is the
+  most dangerous interaction in the plan and must be implemented before 5b is enabled.
+- **V3 for `k8s-job` surfaces requires waiting for a real scheduled run.** Verification is
+  therefore asynchronous and can take up to one schedule interval (30 min for the trigger
+  case, 24h for the daily jobs). The loop must hold the goal open, not declare success at
+  deploy time. For daily jobs, consider triggering a manual Job from the CronJob template
+  rather than waiting a day — `create` on `batch/jobs` is **not** in the D1 grant, so this
+  needs either a separate decision or acceptance of the slow path.
+- **V4 exists because an autonomous fix has no reviewer.** A change that fixes S and breaks
+  T would otherwise be indistinguishable from a success. The existing alert store is the
+  blast-radius oracle: no new fingerprints during the verification window.
+- **Revert is the failure path, not retry.** A loop that retries a failing fix will consume
+  the deploy queue, whose contention behaviour under machine-generated commits is untested
+  (`09-04 §6.3`). Bounded attempts per fingerprint, then stop and escalate.
+- **Dedup key is the alert fingerprint**, so a flapping detector cannot open a goal per
+  cycle. Monitoring's fingerprint dedup and runlayer's `LOOPING_GOAL_CYCLE_LIMIT` both exist
+  but have never been composed (`09-04 §6.3`) — budget for that as real work.
+- **Every autonomous action is announced.** Goal opened, commit made, verification result,
+  revert if any — all to the single Telegram chat (D2). Autonomy without narration
+  reproduces the original defect at a higher level: things happening that nobody knows about.
+- **Deployment serialization is respected.** All deploys go through the existing queue and
+  `shared/scripts/deploy.sh`; the loop never bypasses the lock (`AGENTS.md`).
+
+**Exit test:** a synthetic failure on an eligible surface produces one alert, one goal, one
+commit, and a verified resolution announced in Telegram. A deliberately bad fix is reverted
+automatically and re-alerts at `critical`. A failure on an ineligible surface produces an
+alert and a goal but **no commit**. A fix targeting a service with broken log ingest is
+reported as verification-failed, not success.
 
 ### Phase 6 — Make the gap structurally impossible *(the actual objective)*
 
@@ -401,50 +495,63 @@ the instances.
 
 ## 5. Sequencing
 
+All four decisions are resolved, so nothing is decision-blocked. Remaining order is driven
+by trust dependency.
+
 ```
-D1 ─────────────────────────┐
-D2 ──┐                      │
-D4 ──┼──┐                   │
-D3 ──┼──┼───────────┐       │
-     ▼  │           │       ▼
-   Phase 0 ─────────┼──▶ Phase 2 (K8s watcher) ──┐
-     │              │       ▲                    │
-     │              │       │ 5a ships with ─────┤
-   Phase 1 ─────────┼───────┴──▶ Phase 4 ────────┤
-   (ledger,         │                            │
-    no deps,        └──▶ Phase 3 (error rules) ──┤
-    start now)                                   │
-                                                 ▼
-                                        Phase 5b (gated remediation)
-                                                 │
-                                                 ▼
-                                        Phase 6 (structural rule)
+  Phase 1 (ledger) ──── no deps, START NOW ────┐
+                                               │  ledger supplies auto_fix_eligible,
+  Phase 0 (channel hygiene) ───────┐           │  without which 5b must not run
+                                   │           │
+                                   ▼           │
+                      Phase 2 (K8s watcher) ───┤
+                      + Phase 5a (heartbeat)   │
+                        ship together          │
+                                   │           │
+                      Phase 4 (host timers) ───┤
+                                   │           │
+                      Phase 3 (error rules) ───┤
+                       scoped to real senders  │
+                                               ▼
+                                    Phase 5b (autonomous verified repair)
+                                     gated on: ledger eligibility + V3 fail-closed
+                                               │
+                                               ▼
+                                    Phase 6 (declared-destination rule)
 ```
 
-Phase 1 has no dependencies and should start immediately — it is the artefact that makes
-every later phase measurable, and it is the one deliverable that is useful even if the plan
-is subsequently rescoped. Phase 2 is the highest value per unit of effort: it closes the
-class that produced the incident. Phase 6 is the highest value *overall* and the easiest to
-drop under time pressure, which is precisely why it is named as the objective in §1 rather
-than listed last as a nicety.
+Three ordering constraints are hard, not preferences:
 
----
+1. **Phase 5a ships with Phase 2, never after.** An autonomous loop with an unmonitored
+   detector is strictly worse than no loop: it reports success by silence.
+2. **Phase 5b must not start before Phase 1's ledger and V3's fail-closed behaviour exist.**
+   Those are the only two controls left after D3 removed the human gate (R3, R10).
+3. **Phase 1 starts immediately.** It has no dependencies, it is the artefact that makes
+   every later phase measurable, and it is the only deliverable still useful if the plan is
+   rescoped.
+
+Phase 2 remains the highest value per unit of effort — it closes the class that produced
+the incident. Phase 6 remains the highest value overall and the easiest to drop under time
+pressure, which is why §1 names it as the objective rather than listing it last.
 
 ## 6. Risks
 
+Updated for the resolved decisions. R2 and R3 changed materially; R10 and R11 are new and
+arise directly from D3's removal of the human gate.
+
 | # | Risk | Mitigation |
 | --- | --- | --- |
-| R1 | **Channel saturation.** Three new streams into a chat already carrying five, one alert already unacknowledged (`09-05 §3.3`) | D2 routing is a Phase 0 prerequisite, not a follow-up. Transition-only semantics (I1). Reuse shipped backoff |
-| R2 | **New cluster RBAC on a public-ingress service** (`09-05 §3.5`) | D1 gate. Read-only verbs, `pod-janitor` as the reviewed precedent. Fallback to option C loses no capability |
-| R3 | **Auto-fix reverses a security hardening.** The trigger incident is the worked example (`09-05 §3.2`) | Ledger-level `auto_fix_eligible: false` on security surfaces. Human merge gate. D3 |
-| R4 | **Alerting on logs while ingestion is broken** — confidently silent for the wrong reason, repeating 2026-07-06 | D4 as prerequisite. No "no errors ⇒ healthy" rule, ever |
-| R5 | **Log-query scan cost.** No index; O(n) file scan per rule cycle (`09-04 §4.2 pt4`) | Measure before choosing cadence. Prefer adding an index over polling less often |
-| R6 | **The watcher dies silently** — the same incident one level up | Phase 5a ships with Phase 2, not after |
-| R7 | **Deploy-queue contention** from agent-generated commits is untested (`09-04 §6.3`) | Human merge gate bounds commit rate. Do not automate merges |
-| R8 | **Duplicate goals/issues** from a flapping detector | Fingerprint as dedup key; compose with `LOOPING_GOAL_CYCLE_LIMIT` — untested composition, budget for it |
-| R9 | **The plan delivers A and drops B**, and the class regrows | Phase 6 named as the objective in §1; its exit test is the only one that proves the class is closed |
-
----
+| R1 | **Channel saturation.** D2 keeps one chat carrying five existing streams plus three new ones; an alert already stood unacknowledged (`09-05 §3.3`) | Transition-only (I1) is now the sole control. All adapters reuse the shipped dedup/flap/backoff. Volume check added to the Phase 6 sweep with a Phase 0 baseline |
+| R2 | **Cluster RBAC on a public-ingress service.** Accepted under D1 | Read-only verbs on `batch/*` and `pods` only; `pod-janitor` as the reviewed precedent. `pods/log` is the widest grant and must be called out explicitly in review |
+| R3 | **An autonomous fix reverses a security hardening.** The trigger incident is the worked example, and an outcome gate cannot catch it — the wrong fix passes every test (`09-05 §3.2`) | Ledger `auto_fix_eligible: false` on auth/allowlist/RBAC/token surfaces and anything last touched by a `fix(security)` commit. This is now the **only** containment; it must be implemented before 5b is enabled |
+| R4 | **Alerting on logs while ingestion is broken** — confidently silent for the wrong reason | Phase 3 scoped to confirmed senders. "No errors ⇒ healthy" permanently forbidden |
+| R5 | **Log-query scan cost.** No index; O(n) file scan per cycle | Measure before choosing cadence. Prefer adding an index over polling less often |
+| R6 | **The watcher dies silently** — the same incident one level up, and worse under autonomy | Phase 5a ships **with** Phase 2, not after |
+| R7 | **Deploy-queue contention** from machine-generated commits is untested (`09-04 §6.3`), and D3 removes the human rate-limiter | Bounded attempts per fingerprint; revert-not-retry; all deploys through the existing serialized queue; never bypass the lock |
+| R8 | **Duplicate goals** from a flapping detector | Fingerprint as dedup key, composed with `LOOPING_GOAL_CYCLE_LIMIT` — an untested composition, budget for it |
+| R9 | **The plan delivers A and drops B**, and the class regrows | Phase 6 is named as the objective in §1; its exit test is the only one proving the class is closed |
+| **R10** | **False-verified fix.** A fix "verifies" because the target ships no logs, so V3 cannot observe errors either way — eight services are in that state today | V3 **fails closed**: no working ingest ⇒ verification failed. Must ship before 5b is enabled |
+| **R11** | **Silent autonomy.** Fixes land with no reviewer and no announcement, reproducing the original defect one level up: things happening that nobody knows about | Every autonomous action announced to Telegram — goal, commit, verification result, revert. V4 blast-radius check catches collateral breakage |
 
 ## 7. Explicitly out of scope
 
@@ -488,24 +595,39 @@ Surfaced by the assessments, outside this plan, should not be lost:
 
 ---
 
-## 8. Reviewer checklist
+## 8. Implementation readiness checklist
 
-1. Do you accept the framing in §1 — that this is a **coverage** problem, and that the
-   engine and delivery are not the gap (`09-05 §3.3`)?
-2. **D1**: may monitoring hold cluster read, priced as "new identity on a public-ingress
-   service" rather than "extend a role"? If no, is fallback C acceptable?
-3. **D2**: what is the routing model, and do you agree Phase 0 blocks everything?
-4. **D3**: what remediation depth? Answer the reachability question — if credential and
-   security failures are the common case and are excluded, what remains automatable?
-5. **D4**: is log-ingestion repair a prerequisite? If you say parallel, how do you avoid
-   re-creating 2026-07-06?
-6. Is `lastSuccessfulTime > N × interval` the right primary condition, given the measured
-   5:1 transient-to-persistent ratio? **What is N?**
-7. Is a ≤15-minute poll interval agreed, given `KEEP_FAILED_MINUTES=120`?
-8. Do you accept I1/I2/I3 as invariants binding on every future adapter?
-9. Do you agree Phase 5a (dead-man's switch) ships **with** Phase 2, not after?
-10. **Is Phase 6 in scope?** If it is dropped, this plan closes today's gaps and the class
-    regrows at the next surface. Say so explicitly rather than by omission.
-11. Is Phase 1's ledger the right enforcement artefact, or is there a lighter mechanism that
-    is still machine-checkable?
-12. Who owns this lane, and does it supersede or run alongside `GOAL-IMPACT-TASK-005`?
+The reviewer questions are closed; these are the gates an implementer must pass. The first
+three are the ones that make autonomy safe and must not be deferred.
+
+1. **Ledger exists with `auto_fix_eligible` populated** before any autonomous commit is
+   possible. Auth guards, allowlists, RBAC and token issuance default to ineligible, as do
+   surfaces last touched by a `fix(security)` commit (R3).
+2. **V3 fails closed on unobservable targets.** A service with no working log ingest yields
+   *verification failed*. Test this explicitly against one of the eight currently rejected
+   services before enabling 5b (R10, D4).
+3. **Phase 5a heartbeat is live** and its absence alerts, shipped with Phase 2 (R6).
+4. RBAC is read-only: `get`/`list`/`watch` on `batch/cronjobs`, `batch/jobs`, `pods`,
+   `pods/log`. No write verbs. `pods/log` breadth acknowledged in review (D1).
+5. `N` in `lastSuccessfulTime > N × interval` is chosen and justified against the measured
+   5:1 transient-to-persistent ratio. Proposal `N=3`; confirm or change with reasoning.
+6. Poll interval ≤ 15 minutes, satisfying the `KEEP_FAILED_MINUTES=120` evidence bound.
+7. Every adapter is transition-based and routes through `AlertsService.fire()`. No adapter
+   has its own sender — the single-chat decision makes this the primary noise control (D2).
+8. Verification for `k8s-job` surfaces waits for a real scheduled run. If manual Job
+   triggering is wanted instead, `create` on `batch/jobs` is a **separate RBAC decision**
+   not covered by D1.
+9. Revert-not-retry is implemented, with bounded attempts per fingerprint and automatic
+   re-alert at `critical` on failure (R7).
+10. Every autonomous action is announced to Telegram: goal, commit, verification result,
+    revert (R11).
+11. Phase 6's declared-destination rule lands in `shared/docs/CREATE_SERVICE.md` and the IPS
+    integration contract, with the ledger check running in the daily sweep. **Without this
+    the class regrows** — it is the objective, not the epilogue.
+12. The `catalog-microservice` fix is tracked separately as **two fixes, not one** (§7.1),
+    and its `product-search` verdict is used as the Phase 2 end-to-end test.
+
+**Deferred by owner decision, recorded so it is not lost:** log-ingestion repair for
+`speakasap` and seven other services (D4). The credential was never provisioned — no
+redeploy can fix it. Every one of those services is invisible to Phase 3 and unverifiable by
+Phase 5b for as long as this stands.
