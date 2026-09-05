@@ -185,6 +185,15 @@
       "updated_at": "2026-07-18T17:56:09+02:00"
     },
     {
+      "id": "GOAL-IMPACT-TASK-005",
+      "type": "goal",
+      "status": "active",
+      "title": "Alert and Health-Check Noise Reduction",
+      "path": "docs/22_goal_impact/GOAL-IMPACT-TASK-005.md",
+      "parent_ids": [],
+      "updated_at": "2026-09-04T14:55:00.000+02:00"
+    },
+    {
       "id": "MS-001",
       "type": "milestone",
       "status": "review",
