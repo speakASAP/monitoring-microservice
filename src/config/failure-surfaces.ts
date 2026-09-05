@@ -146,6 +146,19 @@ const CRONTAB_SURFACES: FailureSurface[] = [
     autoFixEligible: false,
     notes: 'Daily 02:00. Wrapped by run-and-report.sh — this was the highest-consequence gap, since a silently failing backup is only discovered during a restore.',
   },
+  {
+    surface: 'poll-systemd-timers',
+    kind: 'host-crontab',
+    owningRepo: 'shared',
+    failureDestination: 'monitoring-alert',
+    autoFixEligible: false,
+    notes:
+      'Every 5 min. Watches the three host systemd timers. Declared rather than filtered out as a wrapper, because ' +
+      'a watcher that stops is a gap that looks exactly like health: the surfaces it covers simply go quiet. ' +
+      'Wrapped by run-and-report.sh so a crash or non-zero exit alerts. Residual gap: if this crontab line is ' +
+      'removed outright, nothing notices — closing that needs a heartbeat with a staleness check, tracked for Phase 5b. ' +
+      'Not auto-repairable: an agent editing its own failure detector is how a blind spot becomes permanent.',
+  },
 ];
 
 /**
@@ -164,25 +177,31 @@ const SYSTEMD_TIMER_SURFACES: FailureSurface[] = [
     surface: 'alfares-critical-backup',
     kind: 'host-systemd-timer',
     owningRepo: '-',
-    failureDestination: 'nothing',
+    failureDestination: 'monitoring-alert',
     autoFixEligible: false,
-    notes: 'Weekly. Root-owned script in /usr/local/sbin, outside any repo. Backup surface — never auto-repaired.',
+    notes:
+      'Daily 02:17. Root-owned script in /usr/local/sbin, outside any repo. Backup surface — never auto-repaired. ' +
+      'Watched by shared/scripts/poll-systemd-timers.sh from the ssf crontab, not by an OnFailure= drop-in: the unit ' +
+      'is root-owned and sudo is password-gated here, so polling is what could actually be installed.',
   },
   {
     surface: 'statex-secret-census',
     kind: 'host-systemd-timer',
     owningRepo: 'shared',
-    failureDestination: 'nothing',
+    failureDestination: 'monitoring-alert',
     autoFixEligible: false,
-    notes: 'Weekly. Audits secrets; a repair agent must not edit a component that reads every secret in the ecosystem.',
+    notes:
+      'Daily 09:30. Audits secrets; a repair agent must not edit a component that reads every secret in the ecosystem. ' +
+      'Watched by shared/scripts/poll-systemd-timers.sh.',
   },
   {
     surface: 'gnome-gui-recover',
     kind: 'host-systemd-timer',
     owningRepo: 'shared',
-    failureDestination: 'nothing',
+    failureDestination: 'monitoring-alert',
     autoFixEligible: true,
-    notes: 'Every 3 min. Desktop session recovery; low blast radius.',
+    notes:
+      'Every 3 min. Desktop session recovery; low blast radius. Watched by shared/scripts/poll-systemd-timers.sh.',
   },
 ];
 

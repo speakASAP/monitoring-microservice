@@ -20,25 +20,47 @@ describe('failure surface ledger', () => {
     expect(new Set(names).size).toBe(names.length);
   });
 
-  it('records the still-blind host surfaces rather than omitting them', () => {
+  it('leaves no surface undeclared and no declared surface unwatched', () => {
     // The whole point of the ledger: a gap you have declared is a visible
     // finding, a gap you have not is indistinguishable from silence.
     //
-    // The remaining gaps are the three systemd timers. No unit under
-    // /etc/systemd/system declares OnFailure=, and adding one needs root, which
-    // is password-gated on this host. They stay declared as gaps until that
-    // happens — which is precisely the behaviour being asserted here.
-    const blind = undetectedSurfaces().map((s) => s.surface);
-    expect(blind).toContain('alfares-critical-backup');
-    expect(blind).toContain('statex-secret-census');
-    expect(blind.every((b) => b !== 'backup-all-databases')).toBe(true);
+    // Every surface now reports somewhere. This assertion is deliberately an
+    // invariant rather than a list of known-blind names: when the next surface
+    // is added to the ledger without a destination, this fails, instead of
+    // continuing to pass because the new gap was not in a hardcoded snapshot.
+    // That is the failure mode the ledger exists to prevent, so the test must
+    // not reproduce it.
+    expect(undetectedSurfaces()).toEqual([]);
+  });
+
+  it('watches the systemd timers by polling, since OnFailure= needs root', () => {
+    // These were the last three gaps. The direct mechanism is an OnFailure=
+    // drop-in, but the units are root-owned and sudo is password-gated here,
+    // so they were covered by an unprivileged poller from the ssf crontab
+    // instead. Weaker than OnFailure= -- up to one poll interval late -- and
+    // still incomparably better than nothing, which is what watched them
+    // before.
+    const timers = FAILURE_SURFACES.filter((s) => s.kind === 'host-systemd-timer');
+    expect(timers).toHaveLength(3);
+    expect(timers.every((s) => s.failureDestination === 'monitoring-alert')).toBe(true);
+  });
+
+  it('never allows the secret census or a backup to be auto-repaired', () => {
+    // Covering these surfaces means an agent can now be woken by them. Neither
+    // is a safe thing to let it edit: one reads every secret in the ecosystem,
+    // the other is the last line of defence during a restore.
+    const forbidden = ['statex-secret-census', 'alfares-critical-backup'];
+    for (const name of forbidden) {
+      const surface = FAILURE_SURFACES.find((s) => s.surface === name);
+      expect(surface?.autoFixEligible).toBe(false);
+    }
   });
 
   it('shows the crontab entries are now reporting, including the backup', () => {
     // These were the highest-consequence gaps: a silently failing backup is
     // only discovered during a restore.
     const crontab = FAILURE_SURFACES.filter((s) => s.kind === 'host-crontab');
-    expect(crontab).toHaveLength(4);
+    expect(crontab).toHaveLength(5);
     expect(crontab.every((s) => s.failureDestination === 'monitoring-alert')).toBe(true);
   });
 
