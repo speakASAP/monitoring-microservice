@@ -13,11 +13,14 @@ import { CredentialSelfReporter } from './credential-self-reporter';
 import { CredentialsController } from './credentials.controller';
 import { ServicesModule } from '../services/services.module';
 import { LoggingService } from '../common/logging/logging.service';
+import { HeartbeatService } from './heartbeat.service';
+import { JobWatcher } from './job-watcher';
+import { KubeClient } from '../k8s/kube-client';
 
 @Module({
   imports: [TypeOrmModule.forFeature([Alert]), ServicesModule],
   controllers: [AlertsController, CredentialsController],
-  providers: [AlertsService, AlertNotifier, NotificationsClient, MonitoringIngestGuard, HealthWatcher, AlertSweeper, CredentialWatcher, CredentialSelfReporter, LoggingService],
-  exports: [AlertsService, AlertNotifier],
+  providers: [AlertsService, AlertNotifier, NotificationsClient, MonitoringIngestGuard, HealthWatcher, AlertSweeper, CredentialWatcher, CredentialSelfReporter, LoggingService, KubeClient, HeartbeatService, JobWatcher],
+  exports: [AlertsService, AlertNotifier, HeartbeatService],
 })
 export class AlertsModule {}

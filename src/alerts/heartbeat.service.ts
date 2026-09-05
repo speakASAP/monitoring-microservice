@@ -59,23 +59,23 @@ export class HeartbeatService {
    * an adapter that dies on its very first poll is still known to exist and is
    * still reported.
    */
-  register(name: string, expectedIntervalMinutes: number): void {
+  register(name: string, expectedIntervalMinutes: number, now: Date = new Date()): void {
     if (this.registry.has(name)) return;
     this.registry.set(name, {
       name,
       expectedIntervalMinutes,
       // Seeded to now: the adapter gets one full grace window to produce its
       // first beat rather than alerting immediately at boot.
-      lastBeatAt: new Date(),
+      lastBeatAt: now,
       lastError: null,
     });
   }
 
   /** Record a completed cycle. */
-  beat(name: string): void {
+  beat(name: string, now: Date = new Date()): void {
     const reg = this.registry.get(name);
     if (!reg) return;
-    reg.lastBeatAt = new Date();
+    reg.lastBeatAt = now;
     reg.lastError = null;
   }
 

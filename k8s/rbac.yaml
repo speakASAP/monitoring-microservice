@@ -1,0 +1,63 @@
+# Cluster-scoped read identity for monitoring-microservice.
+#
+# Why this exists: CronJob outcomes are not observable any other way. The
+# cluster runs no log-collector daemonset -- log ingestion is opt-in HTTP from
+# application code -- so a CronJob's stdout never reaches logging-microservice,
+# and a job that dies before its first HTTP call emits nothing at all. The
+# Kubernetes API is the only place a job's success or failure is recorded.
+# Before this, nothing watched any of the 11 CronJobs in the cluster, and one of
+# them failed every 30 minutes for four days without producing a single alert.
+#
+# Scope discipline:
+#   - get/list/watch only. There is no create, update, patch or delete verb
+#     anywhere in this role, so a bug in the watcher cannot mutate the cluster.
+#   - `pods/log` is the widest grant here and is called out deliberately: it can
+#     read the output of any pod in the cluster, which may include secrets that
+#     applications print. It is required because a Job outlives its own logs
+#     (pod-janitor reclaims failed pods after 120 minutes), so the failure
+#     reason must be captured at detection time or it is lost.
+#
+# Precedent: pod-janitor already holds a reviewed ClusterRole with strictly
+# wider verbs, including pods/delete.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: monitoring-microservice
+  namespace: statex-apps
+  labels:
+    app: monitoring-microservice
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: monitoring-microservice-reader
+  labels:
+    app: monitoring-microservice
+rules:
+  # Job outcomes: has this CronJob succeeded recently, and which Job failed.
+  - apiGroups: ["batch"]
+    resources: ["cronjobs", "jobs"]
+    verbs: ["get", "list", "watch"]
+  # Pods are how a failed Job is traced to the output that explains it.
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list", "watch"]
+  # The failure reason itself. Widest grant in this role — see header.
+  - apiGroups: [""]
+    resources: ["pods/log"]
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: monitoring-microservice-reader
+  labels:
+    app: monitoring-microservice
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: monitoring-microservice-reader
+subjects:
+  - kind: ServiceAccount
+    name: monitoring-microservice
+    namespace: statex-apps

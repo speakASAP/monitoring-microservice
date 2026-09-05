@@ -20,6 +20,12 @@ spec:
       labels:
         app: monitoring-microservice
     spec:
+      # Grants the read-only cluster identity defined in k8s/rbac.yaml. Without
+      # it the pod falls back to the namespace default account, which cannot
+      # list CronJobs, and JobWatcher stays permanently dormant — silently,
+      # which is the exact failure mode this lane exists to remove. Apply
+      # rbac.yaml before this deployment.
+      serviceAccountName: monitoring-microservice
       initContainers:
         - name: wait-postgres
           image: busybox:1.36

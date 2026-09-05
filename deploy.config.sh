@@ -23,7 +23,14 @@ DEPLOYMENTS=(
   "monitoring-web|app|monitoring-web"
 )
 
-MANIFESTS=(configmap.yaml external-secret.yaml deployment.yaml service.yaml deployment-web.yaml service-web.yaml ingress.yaml)
+# rbac.yaml is listed FIRST and ahead of deployment.yaml deliberately: the
+# deployment now names serviceAccountName monitoring-microservice, and a pod
+# referencing a ServiceAccount that does not exist yet cannot read the
+# Kubernetes API. JobWatcher would then sit permanently dormant while the
+# service still reported healthy — the precise silent-failure shape this
+# service exists to detect. Declared here rather than applied by hand so a
+# cluster rebuild cannot quietly drop the identity.
+MANIFESTS=(rbac.yaml configmap.yaml external-secret.yaml deployment.yaml service.yaml deployment-web.yaml service-web.yaml ingress.yaml)
 
 deploy_post_verify() {
   kubectl exec -n "$NAMESPACE" "deploy/${SERVICE_NAME}" -- node -e "
