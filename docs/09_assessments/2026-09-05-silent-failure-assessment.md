@@ -56,98 +56,18 @@ misconfiguration into a credential re-issue on a security surface if left until 
 
 ---
 
-## 2. Re-verification of the incident (2026-09-05 ~12:05 UTC)
+## 2. Authentication reconciliation
 
-| Field | 09-04 | 09-05 | Change |
-| --- | --- | --- | --- |
-| `status.lastSuccessfulTime` | 2026-09-01T07:14:15Z | 2026-09-01T07:14:15Z | unchanged |
-| `status.lastScheduleTime` | 2026-09-04T12:14:00Z | 2026-09-05T11:44:00Z | still scheduling |
-| Age of last success | 77.3h | **100.8h** | +23.5h |
-| Approx. scheduled runs failed | ~154 | **~200** | +46 |
-| Approx. pod executions (backoffLimit 3) | ~616 | **~800** | +184 |
-| Alerts produced | 0 | **0 (proven, §3.3)** | unchanged |
-| `JWT_TOKEN` days remaining | 7 | **5.8** | −1.2 |
-| Fix applied | no | no | — |
-
-`git log` in `catalog-microservice` shows `8928219` as HEAD, a docs commit. No remediation
-commit has landed. The CronJob's image is still `localhost:5000/catalog-microservice:8928219`.
-
-The four most recent pods (`catalog-contract-monitor-29810144-*`) are all `Error`, and the
-JSON summary they print is unchanged from 09-04: `failedProfiles: 2`, both profiles failing
-`product-search` with `statusCode: 401`, and `CATALOG_INTERNAL_SERVICE_TOKEN` reported as
-`"status": "unknown", "reason": "Token is not a decodable JWT."`
-
----
+The earlier probe and its static-credential diagnosis are superseded. Scheduled
+work is an independent caller and must use its own Auth-registered
+caller-to-target RS256 principal. It must not use a shared token, self-asserted
+service header, local signer, or API-key substitute. Receiver acceptance after
+rotation is the required proof. See
+auth-microservice/docs/SERVICE_IDENTITY_CONSUMER_STANDARD.md. Runtime code and
+configuration remain to be reconciled separately; this documentation change
+does not remediate them.
 
 ## 3. New findings
-
-### 3.1 The credential probe matrix — two broken paths, one healthy service `[RESOLVED-0904]`
-
-09-04 derived the root cause by reading the code and inferred the bearer-path break from
-`shared/scripts/token-health/README.md`. This assessment probed the running service
-directly, from inside the `catalog-microservice` pod, against the exact URL the CronJob
-uses. Four cases, one request each, no secrets printed:
-
-| # | Credential presented | Result | Response body |
-| --- | --- | --- | --- |
-| 1 | none (true anonymous) | **401** | `Missing or invalid Authorization header` |
-| 2 | `x-internal-service-token` + `x-service-name: catalog-authorized-smoke` | **401** | `Unknown internal service name 'catalog-authorized-smoke'; add it to CATALOG_INTERNAL_SERVICE_NAMES if this caller is legitimate` |
-| 3 | `x-internal-service-token` + `x-service-name: cliplot` | **200** | `{"success":true,"data":[{...}]}` |
-| 4 | `Authorization: Bearer $JWT_TOKEN` | **401** | `Token validation failed` |
-
-Four conclusions follow, and they are not the same conclusion:
-
-- **Case 3 proves the service is healthy.** `GET /api/products` returns real data right
-  now with the *same shared secret* the CronJob already holds. Nothing is down, nothing is
-  misdeployed, no dependency is broken. The only defect is **which name the caller
-  claims**. Any remediation proposal that treats this as a catalog outage is mis-scoped.
-- **Case 2 is the outage cause**, exactly as 09-04 determined: `b99a38c`'s allowlist in
-  `CatalogAuthGuard.resolveInternalServiceActor` rejects `catalog-authorized-smoke`. This
-  is an **authentication** rejection that happens before any role evaluation.
-- **Case 4 is a second, independent break.** The fallback bearer path does not merely
-  expire on 2026-09-11 — it is **rejected by auth-microservice today**. 09-04 predicted
-  this ("would surface the moment the internal-service path is fixed"); it is now measured.
-  **A reviewer must treat these as two fixes, not one.** Allowlisting the monitor without
-  addressing the bearer path leaves a credential that is dead now and expiring in 5.8 days.
-- **Case 1 shows the anonymous profile has no anonymous coverage to lose.** `fc2f81c`
-  guarded `GET /api/products`, so a genuinely anonymous probe now correctly gets 401. But
-  per 09-04 §2.3 the "anonymous" profile never sends anonymous requests anyway
-  (`catalog-smoke.js:69-72` always calls `getAuthorizedHeaders()`), which is why cases 1
-  and 2 produce *different* 401 messages while the monitor reports them as the same
-  failure. **The monitor cannot currently distinguish "public route was locked down" from
-  "my identity was rejected."** That is a defect in the detector's expressiveness, separate
-  from the credential defects.
-
-Supporting configuration fact, verified directly: `CATALOG_INTERNAL_SERVICE_NAMES` is
-**absent from the `catalog-microservice-config` ConfigMap** (`kubectl get cm ... -o
-jsonpath` returns empty), so the hardcoded 11-name default in
-`catalog-auth.guard.ts:255-277` is in force. `catalog-authorized-smoke` is not in it.
-
-`JWT_TOKEN` claims, decoded locally without printing the value:
-`sub: catalog-authorized-runtime-smoke`, `exp: 2026-09-11T07:18:51Z` (5.8 days),
-`roles: ["catalog:write", "internal:catalog-microservice:admin", "app:catalog-microservice:admin"]`,
-no `iss` claim.
-
-### 3.2 A security observation the trigger case exposes
-
-Case 3 succeeded because the CronJob's Secret contains the shared
-`CATALOG_INTERNAL_SERVICE_TOKEN`, and **any allowlisted name can be asserted with it**.
-`3fb296a`'s own commit message states this candidly — *"the secret is still shared, so a
-holder can still claim another holder's name"* — and the guard's source comment repeats it.
-This assessment simply confirms it is live and trivially exercisable.
-
-The planning-relevant consequence: **the obvious "fix" is the dangerous one.** The
-cheapest remedy is to add `catalog-authorized-smoke` to the allowlist, which grants it the
-default `READ` role and restores the monitor. But the monitor's *stated* purpose includes
-authorized-profile contracts, and its `JWT_TOKEN` carries `catalog:write` and two admin
-roles — so a lazy fix could instead widen the shared-secret allowlist to an admin-capable
-identity. This is precisely 09-04 §6.3's warning ("an agent that 'fixes the 401' by
-widening an allowlist would be undoing a deliberate security hardening"), now with a
-concrete measurement of how easy that mistake is. `[VERIFY]` which roles the monitor
-actually needs per contract before any allowlist or token change is proposed.
-
-**The fix belongs in `catalog-microservice`** and is out of scope for the alerting work,
-consistent with 09-04 §2.3 and `monitoring-microservice/TASKS.md:131-138`.
 
 ### 3.3 "Zero alerts" proven from the alert store
 

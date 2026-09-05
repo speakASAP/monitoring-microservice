@@ -51,113 +51,16 @@ source**, and a decision on **whether and how to close the loop to automated rep
 
 ---
 
-## 2. The reproduced incident
+## 2. Authentication finding
 
-### 2.1 Timeline
-
-| Time (UTC) | Event |
-| --- | --- |
-| 2026-09-01 07:14:15 | `catalog-contract-monitor` last successful run (`status.lastSuccessfulTime`) |
-| 2026-09-01 07:20:39 | `b99a38c` committed — `fix(security): reject unknown x-service-name on the internal-service path` |
-| 2026-09-01 07:44 | First failing run. Has failed every 30 min since. |
-| 2026-09-01 19:57:42 | `fc2f81c` — guards 14 unauthenticated routes, decorates all 83 guarded routes |
-| 2026-09-01 20:02:57 | `3fb296a` — per-caller role grants instead of admin-for-everyone |
-| 2026-09-04 07:18:26 | `statex-token-health` alerts 1 finding to Telegram — catalog `JWT_TOKEN` CRITICAL, 7 days left |
-| 2026-09-04 12:44 | Still failing. ~154 runs. Zero CronJob alerts. |
-
-The causal window is exact: the last success is 07:14:15, `b99a38c` lands at 07:20:39, the
-07:44 run fails. `fc2f81c` and `3fb296a` later that evening tightened the same surface but
-the lane was already dark.
-
-### 2.2 Root cause
-
-Both profiles fail on the same contract, `product-search`, with **401**:
-
-```
-"failedContracts": [
-  { "contract": "product-search", "statusCode": 401,
-    "message": "Product search did not return 2xx" }
-]
-```
-
-`catalog-microservice/scripts/catalog-smoke.js:13` selects the credential path:
-
-```js
-const authToken = process.env.CATALOG_SMOKE_AUTH_TOKEN || (internalServiceToken ? "" : process.env.JWT_TOKEN || "");
-```
-
-The CronJob supplies `CATALOG_SMOKE_INTERNAL_SERVICE_TOKEN`, so `internalServiceToken` is
-truthy, `authToken` becomes `""`, and `getAuthorizedHeaders()`
-(`catalog-smoke.js:51-64`) takes the **internal-service branch**, sending:
-
-```js
-"x-internal-service-token": internalServiceToken,
-"x-service-name": smokeServiceName,   // default "catalog-authorized-smoke" (line 14)
-```
-
-`b99a38c` added an allowlist to `CatalogAuthGuard.resolveInternalServiceActor`
-(`src/auth/catalog-auth.guard.ts:169-172`):
-
-```js
-if (!this.allowedInternalServiceNames().includes(source)) {
-  throw new UnauthorizedException(
-    `Unknown internal service name '${source}'; add it to CATALOG_INTERNAL_SERVICE_NAMES if this caller is legitimate`);
-}
-```
-
-The default allowlist (`catalog-auth.guard.ts:260-276`) contains eleven names:
-`allegro-service, bazos-service, catalog-microservice, cliplot, flipflop-api-gateway,
-flipflop-cart-service, flipflop-order-service, flipflop-product-service, heureka-service,
-marketing-microservice, orders-microservice`. The monitor's name is not among them, and
-the ConfigMap `catalog-microservice-config` sets no `CATALOG_INTERNAL_SERVICE_NAMES`
-override (only `SERVICE_NAME=catalog-microservice`). Hence 401 — an **authentication**
-rejection, before any role check.
-
-The allowlist was derived from *"which workloads actually HOLD the credential (a
-fingerprint scan of every Secret in `statex-apps`)"*. The monitor mounts
-`catalog-microservice-secret` — the same Secret as the service itself — so a
-fingerprint-based census could not distinguish it as a separate caller. The derivation
-method had a blind spot for CronJob workloads, which is the same blind spot as the
-monitoring gap, in a different tool.
-
-### 2.3 Secondary defects found in the same code path
-
-These are observations, not the outage cause. Each should be confirmed by a reviewer
-before being treated as scope.
-
-- **The "anonymous" profile is not anonymous.** `runSmokeProfile` clears
-  `CATALOG_SMOKE_AUTHORIZED`, but `requestReadContract` (`catalog-smoke.js:69-72`) always
-  calls `getAuthorizedHeaders()`, which depends only on which token env vars are present.
-  Both profiles therefore send the same internal-service credential and fail identically.
-  The monitor cannot currently observe true anonymous behaviour — which is precisely what
-  `fc2f81c` changed (14 routes went from public to guarded). **The profile that would have
-  detected the public-exposure regression does not exercise the unauthenticated path.**
-- **The monitor's token-expiry check does not check the token it authenticates with.**
-  `checkTokenExpiry` (`catalog-contract-monitor.js:35-38`) inspects only
-  `WAREHOUSE_SERVICE_TOKEN` and `CATALOG_INTERNAL_SERVICE_TOKEN`. It never inspects
-  `JWT_TOKEN`. Live output shows `CATALOG_INTERNAL_SERVICE_TOKEN` reported as
-  `"status": "unknown", "reason": "Token is not a decodable JWT."` — so of the two tokens
-  it does check, one yields no signal, and the one it omits is the one expiring.
-- **`JWT_TOKEN` is HS256 and expires 2026-09-11T07:18:51Z** (claims decoded without
-  printing the value; `iat` 2026-06-13, roles `catalog:write`,
-  `internal:catalog-microservice:admin`, `app:catalog-microservice:admin`). Per
-  `shared/scripts/token-health/README.md`, auth-microservice **retired HS256 on
-  2026-08-18 and verifies RS256 only**, so this token is already non-verifiable regardless
-  of its expiry date. This is a second, independent break of the fallback credential path
-  and would surface the moment the internal-service path is fixed without also fixing the
-  bearer path. It is already visible in the token-health baseline as
-  `catalog-microservice / JWT_TOKEN / CRITICAL / HS256 / 7`.
-- The fix belongs in `catalog-microservice`, per `monitoring-microservice/TASKS.md:131-138`.
-  It is **out of scope for the alerting work** and is tracked here only as the trigger.
-
-### 2.4 What already worked
-
-`statex-token-health` caught the `JWT_TOKEN` expiry and delivered it to Telegram at
-07:18 today. The credential half of this incident **was** covered. Only the
-job-outcome half was not. This matters for planning: the answer is not "build alerting",
-it is "extend a working alerting system to two uncovered signal sources".
-
----
+The prior probe depended on a legacy static credential and self-asserted caller
+identity. That path is not a valid remediation or monitoring contract. The
+CronJob requires its own Auth-registered caller-to-catalog-microservice RS256
+principal, delivered through Vault -> ExternalSecret -> Kubernetes Secret ->
+secretKeyRef, and its rotation must prove catalog acceptance. The required
+receiver enforcement and route role are governed solely by
+auth-microservice/docs/SERVICE_IDENTITY_CONSUMER_STANDARD.md. The required
+runtime remediation is outside this assessment and remains unimplemented.
 
 ## 3. Inventory: what runs on a schedule
 
