@@ -75,6 +75,22 @@ check 'host-systemd-timer' \
      | grep -E '^(alfares-|statex-|gnome-gui-recover)')" \
   'Ecosystem systemd timers'
 
+# User-scope timers are a separate systemd instance with its own bus, so they do
+# not appear in `systemctl list-timers` above. They were missed entirely on the
+# first pass for exactly that reason -- including vault-eso-token-renew, which
+# keeps the External Secrets Operator token alive. Enumerated separately so the
+# same omission cannot happen again silently.
+#
+# systemd-user-bus is appended by hand: it is not a timer but the reachability
+# of the user bus itself, declared as a surface so a bus outage reports once
+# rather than as five simultaneous timer failures.
+check 'host-user-timer' \
+  "$(XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}" systemctl --user list-timers --all --no-pager 2>/dev/null \
+     | grep -oE '[a-z0-9-]+\.timer' | sed 's/\.timer//' | sort -u \
+     | grep -E '^(statex-|vault-|ips-|next-tasks)'; \
+   echo systemd-user-bus)" \
+  'Ecosystem user-scope systemd timers'
+
 echo
 echo "=== Surfaces whose failures currently reach nobody ==="
 # Read straight off the ledger so this cannot drift from the declaration.

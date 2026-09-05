@@ -36,6 +36,7 @@ export type FailureSurfaceKind =
   | 'k8s-cronjob'
   | 'host-crontab'
   | 'host-systemd-timer'
+  | 'host-user-timer'
   | 'k8s-deployment';
 
 export interface FailureSurface {
@@ -205,10 +206,80 @@ const SYSTEMD_TIMER_SURFACES: FailureSurface[] = [
   },
 ];
 
+/**
+ * `systemctl --user` timers. A separate systemd instance with its own bus, so
+ * they never appear in `systemctl list-timers` and were missed on the first
+ * pass of this work — which is the point: the ecosystem's most consequential
+ * scheduled jobs were the ones hardest to notice.
+ */
+const USER_TIMER_SURFACES: FailureSurface[] = [
+  {
+    surface: 'vault-eso-token-renew',
+    kind: 'host-user-timer',
+    owningRepo: 'shared',
+    failureDestination: 'monitoring-alert',
+    autoFixEligible: false,
+    notes:
+      'Daily. Renews the External Secrets Operator Vault token. Silent failure expires the token and every ' +
+      'synced secret in the ecosystem stops refreshing — the trigger incident one layer down, and far wider. ' +
+      'Never auto-repaired: an agent must not edit the component that holds the root of the secret chain.',
+  },
+  {
+    surface: 'statex-token-health',
+    kind: 'host-user-timer',
+    owningRepo: 'shared',
+    failureDestination: 'monitoring-alert',
+    autoFixEligible: false,
+    notes:
+      'Daily. Watches credential expiry across the ecosystem. This is the check that should have caught the ' +
+      "catalog-contract-monitor JWT expiring on 2026-09-11; a silent failure here removes the warning for every " +
+      'other credential too. Credential surface — never auto-repaired.',
+  },
+  {
+    surface: 'ips-ecosystem-validator',
+    kind: 'host-user-timer',
+    owningRepo: 'shared',
+    failureDestination: 'monitoring-alert',
+    autoFixEligible: true,
+    notes: 'Twice daily. Validates IPS chain integrity. Reporting-only surface, safe to repair.',
+  },
+  {
+    surface: 'next-tasks-scan',
+    kind: 'host-user-timer',
+    owningRepo: 'shared',
+    failureDestination: 'monitoring-alert',
+    autoFixEligible: true,
+    notes: 'Twice daily. Scans for next actionable tasks. Reporting-only surface, safe to repair.',
+  },
+  {
+    surface: 'statex-ecosystem-digest',
+    kind: 'host-user-timer',
+    owningRepo: 'shared',
+    failureDestination: 'monitoring-alert',
+    autoFixEligible: true,
+    notes:
+      'Daily 08:00. Produces the ecosystem digest. A silent failure here is self-concealing: the digest is ' +
+      'how absence of news is normally noticed, so its own absence looks like a quiet day.',
+  },
+  {
+    surface: 'systemd-user-bus',
+    kind: 'host-user-timer',
+    owningRepo: 'shared',
+    failureDestination: 'monitoring-alert',
+    autoFixEligible: false,
+    notes:
+      'Not a timer: the reachability of `systemctl --user` itself. cron supplies no session bus, so without ' +
+      'XDG_RUNTIME_DIR every user-scope read fails at once. Declared as its own surface so that outcome reports ' +
+      'once instead of five simultaneous false alarms — a channel that cries wolf gets muted, which is the ' +
+      'failure this whole effort exists to prevent.',
+  },
+];
+
 export const FAILURE_SURFACES: FailureSurface[] = [
   ...CRONJOB_SURFACES,
   ...CRONTAB_SURFACES,
   ...SYSTEMD_TIMER_SURFACES,
+  ...USER_TIMER_SURFACES,
 ];
 
 /** Surfaces whose failures currently reach nobody. */

@@ -45,11 +45,38 @@ describe('failure surface ledger', () => {
     expect(timers.every((s) => s.failureDestination === 'monitoring-alert')).toBe(true);
   });
 
+  it('covers the user-scope timers, which are invisible to `systemctl list-timers`', () => {
+    // These were missed on the first pass: `systemctl --user` is a separate
+    // systemd instance with its own bus, so none of them showed up in the
+    // enumeration that found the system timers. The most consequential
+    // scheduled jobs in the ecosystem were the ones hardest to see.
+    const userTimers = FAILURE_SURFACES.filter((s) => s.kind === 'host-user-timer');
+    expect(userTimers).toHaveLength(6);
+    expect(userTimers.every((s) => s.failureDestination === 'monitoring-alert')).toBe(true);
+    expect(userTimers.map((s) => s.surface)).toContain('vault-eso-token-renew');
+  });
+
+  it('declares the user bus itself, so one outage is not five false alarms', () => {
+    // cron supplies no session bus. Without XDG_RUNTIME_DIR every user-scope
+    // read fails simultaneously, and five bogus alerts at once is worse than
+    // none: it is how a channel earns being muted.
+    const bus = FAILURE_SURFACES.find((s) => s.surface === 'systemd-user-bus');
+    expect(bus).toBeDefined();
+    expect(bus?.failureDestination).toBe('monitoring-alert');
+  });
+
   it('never allows the secret census or a backup to be auto-repaired', () => {
     // Covering these surfaces means an agent can now be woken by them. Neither
     // is a safe thing to let it edit: one reads every secret in the ecosystem,
     // the other is the last line of defence during a restore.
-    const forbidden = ['statex-secret-census', 'alfares-critical-backup'];
+    const forbidden = [
+      'statex-secret-census',
+      'alfares-critical-backup',
+      // Added with the user-scope timers: one holds the root of the secret
+      // chain, the other is the ecosystem's credential-expiry warning.
+      'vault-eso-token-renew',
+      'statex-token-health',
+    ];
     for (const name of forbidden) {
       const surface = FAILURE_SURFACES.find((s) => s.surface === name);
       expect(surface?.autoFixEligible).toBe(false);
