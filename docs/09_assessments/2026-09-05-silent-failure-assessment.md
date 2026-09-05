@@ -58,14 +58,9 @@ misconfiguration into a credential re-issue on a security surface if left until 
 
 ## 2. Authentication reconciliation
 
-The earlier probe and its static-credential diagnosis are superseded. Scheduled
-work is an independent caller and must use its own Auth-registered
-caller-to-target RS256 principal. It must not use a shared token, self-asserted
-service header, local signer, or API-key substitute. Receiver acceptance after
-rotation is the required proof. See
-auth-microservice/docs/SERVICE_IDENTITY_CONSUMER_STANDARD.md. Runtime code and
-configuration remain to be reconciled separately; this documentation change
-does not remediate them.
+The earlier static-credential diagnosis is removed. Scheduled work is an
+independent caller and must follow the sole [Service Identity Consumer Standard](https://github.com/speakASAP/auth-microservice/blob/main/docs/SERVICE_IDENTITY_CONSUMER_STANDARD.md).
+Runtime code and configuration remain to be reconciled separately.
 
 ## 3. New findings
 
