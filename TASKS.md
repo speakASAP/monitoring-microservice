@@ -9,8 +9,7 @@ Its first delivery shipped the same day - flap damping and repeat backoff, `284c
 and verified live (see Ready next). That delivery addressed the lane's dominant cause; see the
 correction note below before acting on the kube-state-metrics framing used earlier.
 
-The daily digest outage that preceded this lane is resolved and its plan is closed
-(`docs/superpowers/plans/2026-06-09-daily-health-digest.md`, status `done`).
+The daily digest outage that preceded this lane is resolved; its historical implementation plan was removed because it prescribed a superseded machine-authentication flow.
 
 ## Ready next
 
