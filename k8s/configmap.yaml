@@ -25,3 +25,27 @@ data:
   # unreported for 23.5 hours.
   HEALTH_WATCH_ENABLED: "true"
   HEALTH_WATCH_CRON: "*/5 * * * *"
+  # CronJob outcome watching. Nothing observed the cluster's 11 CronJobs before
+  # this: HealthWatcher polls /health, and a CronJob has neither an endpoint nor
+  # a long-running pod. catalog-contract-monitor failed every 30 minutes for
+  # four days and raised zero alerts.
+  JOB_WATCH_ENABLED: "true"
+  # Offset from the :00/:15/:30/:45 grid pod-janitor runs on, so evidence
+  # capture is not racing the sweeper that deletes the pods holding it.
+  JOB_WATCH_CRON: "7,22,37,52 * * * *"
+  JOB_WATCH_NAMESPACES: "statex-apps"
+  # Missed runs tolerated before alerting. Transient job failures outnumbered
+  # persistent ones ~5:1 over the 8 days before this shipped, so alerting on
+  # each failure event would carry that ratio into the channel — and a noisy
+  # channel gets muted, which is how the trigger incident stayed invisible.
+  JOB_OVERDUE_MULTIPLE: "3"
+  # Raised from 40 after the first live capture: 40 lines of a verbose job ended
+  # mid-JSON on a trailing skip-list rather than the failure that mattered. The
+  # log is read once, at detection, because pod-janitor destroys the pod 120
+  # minutes later — so the tail has to be long enough to contain the cause.
+  JOB_EVIDENCE_TAIL_LINES: "120"
+  # Watches the watchers. Every adapter added here becomes a new blind spot the
+  # moment it stops running, so a missed cycle is a critical alert of its own.
+  HEARTBEAT_CHECK_ENABLED: "true"
+  HEARTBEAT_CHECK_CRON: "*/5 * * * *"
+  HEARTBEAT_MISSED_CYCLES: "3"
