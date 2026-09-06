@@ -48,6 +48,63 @@ const WATCHED_NAMESPACES = (process.env.JOB_WATCH_NAMESPACES || 'statex-apps')
 const EVIDENCE_TAIL_LINES = Number(process.env.JOB_EVIDENCE_TAIL_LINES || 40);
 
 /**
+ * Character budget for the Telegram-bound rendering of the log tail.
+ *
+ * This bounds ONLY `message`. The untruncated tail always goes to
+ * `labels.evidenceLog` — see `handleOverdue`.
+ */
+const EVIDENCE_MESSAGE_BUDGET = Number(process.env.JOB_EVIDENCE_MESSAGE_BUDGET || 900);
+
+/**
+ * Lines that look like the reason a job failed, rather than the noise around it.
+ *
+ * Measured against the trigger incident. `catalog-contract-monitor` emits a JSON
+ * report whose `failedContracts` block sits at roughly character 760 of a 3900
+ * character tail, followed by ~3000 characters of `skippedContracts`
+ * boilerplate. A last-N-characters window therefore captured only the
+ * boilerplate and the live alert row carried no `401` at all: invariant I2
+ * implemented in mechanism and defeated in practice.
+ *
+ * Flipping the window to the head fails the opposite class -- a stack trace puts
+ * its cause on the last line. So neither end is the answer; the answer is to
+ * find the error-shaped lines wherever they are, and to keep both ends besides.
+ */
+const ERROR_LINE_PATTERNS: RegExp[] = [
+  // HTTP status codes in the 4xx/5xx range, as bare numbers or in prose.
+  /\b(?:[45]\d{2})\b/,
+  /\b(?:status(?:Code)?|http)\b\s*[":=]*\s*[45]\d{2}/i,
+  // Conventional error vocabulary.
+  /\b(?:error|err|fail(?:ed|ure)?|fatal|exception|panic|refused|denied|unauthori[sz]ed|forbidden|timeout|timed out|unreachable|cannot|could not|unable to)\b/i,
+  // Stack frames and uncaught throws.
+  /^\s*at\s+\S+/,
+  /\b(?:Error|Exception):\s/,
+  /\b(?:UnhandledPromiseRejection|uncaughtException)\b/i,
+  // Non-zero exit codes. `exitCode: 0` is not a fault.
+  /\bexit(?:\s|_|-)?code["':=\s]+[1-9]/i,
+  /\bexited with (?:code )?[1-9]/i,
+];
+
+/**
+ * Lines that match ERROR_LINE_PATTERNS but are known not to be causes.
+ *
+ * Without this the `catalog-contract-monitor` digest fills with
+ * `skippedContracts` reasons -- every one contains "No product ID available",
+ * which matches the `cannot`/`could not` family closely enough in spirit that
+ * loosening the patterns would swamp the digest with them. Matching the actual
+ * skip vocabulary is narrower and safer than weakening the error vocabulary.
+ */
+const NON_CAUSE_PATTERNS: RegExp[] = [
+  /"reason"\s*:\s*"(?:No |Set )/i,
+  /"status"\s*:\s*"(?:ok|pass|skip)/i,
+  /\bexit(?:\s|_|-)?code["':=\s]+0\b/i,
+  // Structured counters and timestamps. "failed": 1 says a thing failed and
+  // nothing about what; the neighbouring "failedContracts" block says which.
+  // Left in the digest they crowd out the block that carries the answer --
+  // measured on the trigger artifact, where they consumed 8 of 11 kept lines.
+  /^"?(?:passed|skipped|failed|total|count|duration(?:Ms)?|startedAt|endedAt|timestamp|generatedAt)"?\s*:\s*[\d"]/i,
+];
+
+/**
  * Alerts on Kubernetes CronJobs that have stopped succeeding.
  *
  * This closes the ecosystem's largest blind spot. Before it existed the only
@@ -236,8 +293,12 @@ export class JobWatcher {
       `— roughly ${missedRuns} missed run(s) on schedule "${cj.schedule}" ` +
       `(alerts after ${this.humaniseMinutes(ctx.overdueAfterMinutes)})`;
 
+    // Truncation applies HERE and only here. `message` is the Telegram-bound
+    // rendering and is bounded by the 4096-character limit; `labels.evidenceLog`
+    // below is the machine-readable copy and is never abbreviated.
     const reason = evidence.logTail
-      ? `\nLast output (${evidence.podName}):\n${this.truncate(evidence.logTail, 900)}`
+      ? `\nLast output (${evidence.podName}):\n` +
+        this.renderEvidenceForMessage(evidence.logTail, EVIDENCE_MESSAGE_BUDGET)
       : '\nNo pod output available — the failed pod has already been reclaimed.';
 
     const { transition, alert, notify } = await this.alerts.fire({
@@ -257,10 +318,24 @@ export class JobWatcher {
         intervalMinutes: ctx.intervalMinutes,
         evidenceJob: evidence.jobName,
         evidencePod: evidence.podName,
-        // Stored in full even though the message is truncated: the message is
-        // for a human reading Telegram, this is for whatever tries to diagnose
-        // it later, once the pod is gone.
+        // CONTRACT — read by the repair loop, not by a human.
+        //
+        // `evidenceLog` is the complete, unabbreviated pod log tail exactly as
+        // Kubernetes returned it: JOB_EVIDENCE_TAIL_LINES lines, no digest, no
+        // elision, no "(truncated)" marker. `message` above is a lossy
+        // rendering of this same text for Telegram's 4096-character limit.
+        //
+        // Anything diagnosing a failure must read THIS field. Parsing the
+        // message instead would reintroduce GAP-3 at the consumer, because the
+        // message is abbreviated by construction and its digest is a heuristic.
+        //
+        // Null only when the pod was already reclaimed before capture, which is
+        // a real state and not an error — see `collectEvidence`.
         evidenceLog: evidence.logTail,
+        // Explicit so a consumer can distinguish "not abbreviated" from "we
+        // forgot to say". If this is ever false, evidenceLog is not the tail.
+        evidenceLogTruncated: false,
+        evidenceLogLines: EVIDENCE_TAIL_LINES,
         capturedAt: new Date().toISOString(),
       }),
     });
@@ -293,7 +368,97 @@ export class JobWatcher {
     return `${(minutes / (24 * 60)).toFixed(1)}d`;
   }
 
-  private truncate(text: string, max: number): string {
-    return text.length <= max ? text : `${text.slice(-max)}\n…(truncated)`;
+  /**
+   * True when a line looks like the reason a job failed.
+   *
+   * Exported behaviour is tested directly against the real pod artifact; see
+   * `job-watcher.spec.ts`.
+   */
+  private isCauseLine(line: string): boolean {
+    const trimmed = line.trim();
+    if (!trimmed) return false;
+    if (NON_CAUSE_PATTERNS.some((re) => re.test(trimmed))) return false;
+    return ERROR_LINE_PATTERNS.some((re) => re.test(trimmed));
+  }
+
+  /**
+   * Render a log tail for Telegram without losing the cause.
+   *
+   * Three parts, in this order:
+   *
+   *   1. a digest of the error-shaped lines, wherever in the tail they occur;
+   *   2. the head of the tail;
+   *   3. the end of the tail, after a marked elision.
+   *
+   * Parts 2 and 3 are what a stack trace needs -- its cause is the last line,
+   * and its frames are what make it readable. Part 1 is what a structured
+   * report needs, where the cause is buried mid-document behind boilerplate
+   * longer than the whole budget. Both classes are covered by one rendering
+   * rather than by a choice between two windows.
+   *
+   * The digest carries line numbers so a reader can locate each line in the
+   * untruncated `labels.evidenceLog`, which is never abbreviated.
+   */
+  private renderEvidenceForMessage(text: string, max: number): string {
+    if (text.length <= max) return text;
+
+    const lines = text.split('\n');
+
+    // A cause is often a block, not a line. In the trigger artifact the status
+    // code and the call it belongs to are on adjacent lines of one JSON object:
+    //
+    //     "contract": "product-search",
+    //     "statusCode": 401,
+    //
+    // Matching line-at-a-time keeps the 401 and drops what got the 401, which
+    // is the actionable half. So each match pulls in its immediate neighbours.
+    const CONTEXT_LINES = 1;
+    const keepIndex = new Set<number>();
+    for (let i = 0; i < lines.length; i++) {
+      if (!this.isCauseLine(lines[i])) continue;
+      for (let j = i - CONTEXT_LINES; j <= i + CONTEXT_LINES; j++) {
+        if (j >= 0 && j < lines.length && lines[j].trim()) keepIndex.add(j);
+      }
+    }
+
+    const causeLines = [...keepIndex]
+      .sort((a, b) => a - b)
+      .map((i) => `${i + 1}: ${lines[i].trim()}`);
+
+    // Half the budget for the digest. It is the part most likely to hold the
+    // answer, but it is a heuristic, so the raw head and tail keep the other
+    // half -- a pathological run of matches must not crowd out the real text.
+    const digestBudget = Math.floor(max / 2);
+    let digest = '';
+    if (causeLines.length) {
+      const kept: string[] = [];
+      let used = 0;
+      for (const line of causeLines) {
+        if (used + line.length + 1 > digestBudget) break;
+        kept.push(line);
+        used += line.length + 1;
+      }
+      const omitted = causeLines.length - kept.length;
+      if (kept.length) {
+        digest =
+          `Likely cause (${kept.length}${omitted > 0 ? ` of ${causeLines.length}` : ''} error-shaped line(s)):\n` +
+          `${kept.join('\n')}\n\n`;
+      }
+    }
+
+    const remaining = max - digest.length;
+    if (remaining <= 0) return `${digest.trimEnd()}\n…(full evidence on the alert row)`;
+
+    const elision = '\n…(elided)…\n';
+    // Both ends kept: neither end alone is reliably where the cause is.
+    const headBudget = Math.max(0, Math.floor((remaining - elision.length) / 2));
+    const tailBudget = Math.max(0, remaining - elision.length - headBudget);
+
+    const body =
+      headBudget + tailBudget >= text.length
+        ? text
+        : `${text.slice(0, headBudget)}${elision}${text.slice(text.length - tailBudget)}`;
+
+    return `${digest}${body}\n…(truncated — full evidence on the alert row)`;
   }
 }
