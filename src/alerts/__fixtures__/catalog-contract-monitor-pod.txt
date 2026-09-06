@@ -1,0 +1,126 @@
+{
+  "monitor": "catalog-contract-monitor",
+  "generatedAt": "2026-09-06T05:44:05.689Z",
+  "baseUrl": "http://catalog-microservice.statex-apps.svc.cluster.local:3200",
+  "tokenExpiry": [
+    {
+      "token": "WAREHOUSE_SERVICE_TOKEN",
+      "status": "ok",
+      "daysRemaining": 78.3,
+      "expiresAt": "2026-11-23T13:44:13.000Z",
+      "message": "WAREHOUSE_SERVICE_TOKEN expires in 78.3 days."
+    },
+    {
+      "token": "CATALOG_INTERNAL_SERVICE_TOKEN",
+      "status": "unknown",
+      "reason": "Token is not a decodable JWT."
+    }
+  ],
+  "profileCount": 2,
+  "passedProfiles": 0,
+  "failedProfiles": 2,
+  "profiles": [
+    {
+      "name": "anonymous",
+      "status": "fail",
+      "startedAt": "2026-09-06T05:44:05.136Z",
+      "endedAt": "2026-09-06T05:44:05.390Z",
+      "exitCode": 1,
+      "passed": 4,
+      "skipped": 6,
+      "failed": 1,
+      "failedContracts": [
+        {
+          "contract": "product-search",
+          "statusCode": 401,
+          "message": "Product search did not return 2xx"
+        }
+      ],
+      "skippedContracts": [
+        {
+          "contract": "product-detail",
+          "reason": "No product ID supplied and product search returned no rows."
+        },
+        {
+          "contract": "pricing-current",
+          "reason": "No product ID available for pricing check."
+        },
+        {
+          "contract": "media-by-product",
+          "reason": "No product ID available for media check."
+        },
+        {
+          "contract": "bazos-contract-protection",
+          "reason": "No product ID available for Bazos route check."
+        },
+        {
+          "contract": "authorized-runtime-contracts",
+          "reason": "Set CATALOG_SMOKE_AUTHORIZED=true to run authorized runtime contract checks."
+        },
+        {
+          "contract": "authorized-bazos-draft",
+          "reason": "Set CATALOG_SMOKE_ENABLE_BAZOS_AUTHORIZED=true with approved Bazos identity/category inputs to run this side-effect-risk check."
+        }
+      ]
+    },
+    {
+      "name": "authorized",
+      "status": "fail",
+      "startedAt": "2026-09-06T05:44:05.390Z",
+      "endedAt": "2026-09-06T05:44:05.689Z",
+      "exitCode": 1,
+      "passed": 4,
+      "skipped": 10,
+      "failed": 1,
+      "failedContracts": [
+        {
+          "contract": "product-search",
+          "statusCode": 401,
+          "message": "Product search did not return 2xx"
+        }
+      ],
+      "skippedContracts": [
+        {
+          "contract": "product-detail",
+          "reason": "No product ID supplied and product search returned no rows."
+        },
+        {
+          "contract": "pricing-current",
+          "reason": "No product ID available for pricing check."
+        },
+        {
+          "contract": "media-by-product",
+          "reason": "No product ID available for media check."
+        },
+        {
+          "contract": "bazos-contract-protection",
+          "reason": "No product ID available for Bazos route check."
+        },
+        {
+          "contract": "authorized-warehouse-availability",
+          "reason": "No product ID available for authorized Warehouse check."
+        },
+        {
+          "contract": "authorized-flipflop-projection",
+          "reason": "No product ID available for authorized FlipFlop projection check."
+        },
+        {
+          "contract": "authorized-channel-status",
+          "reason": "Set CATALOG_SMOKE_ENABLE_CHANNEL_STATUS=true to run read-only channel status checks."
+        },
+        {
+          "contract": "authorized-heureka-readiness",
+          "reason": "Set CATALOG_SMOKE_ENABLE_HEUREKA_READINESS=true to run read-only Heureka readiness checks."
+        },
+        {
+          "contract": "authorized-stock-consistency",
+          "reason": "Set CATALOG_SMOKE_ASSERT_STOCK=true to compare Warehouse and channel stock quantities."
+        },
+        {
+          "contract": "authorized-bazos-draft",
+          "reason": "Set CATALOG_SMOKE_ENABLE_BAZOS_AUTHORIZED=true with approved Bazos identity/category inputs to run this side-effect-risk check."
+        }
+      ]
+    }
+  ]
+}
