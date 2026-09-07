@@ -54,6 +54,9 @@ export class HealthWatcher {
     await this.expireStaleAlerts();
 
     const statuses = await this.services.getServicesStatus();
+    const monitoredNames = new Set(
+      statuses.filter((s) => s.monitorable).map((s) => s.name),
+    );
 
     for (const svc of statuses) {
       if (!svc.monitorable) continue;
@@ -80,6 +83,37 @@ export class HealthWatcher {
           service: svc.name,
           error: err?.message ?? String(err),
         });
+      }
+    }
+
+    // Catalog demotions (ghost Services, kind=repository, port 0) stop being
+    // probed, so handleHealthy never runs for them. Close leftover health
+    // fingerprints instead of waiting for the 6h stale sweeper.
+    await this.resolveDemotedHealthAlerts(monitoredNames);
+  }
+
+  private async resolveDemotedHealthAlerts(
+    monitoredNames: Set<string>,
+  ): Promise<void> {
+    let active;
+    try {
+      active = await this.alerts.findActive();
+    } catch (err: any) {
+      this.logger.error(
+        `[HealthWatcher] listing active alerts for demotion resolve failed: ${err?.message ?? String(err)}`,
+      );
+      return;
+    }
+
+    for (const alert of active) {
+      if (alert.alertname !== 'ServiceUnhealthy') continue;
+      if (!alert.service || monitoredNames.has(alert.service)) continue;
+      try {
+        await this.alerts.resolveByFingerprint(this.fingerprintFor(alert.service));
+      } catch (err: any) {
+        this.logger.error(
+          `[HealthWatcher] resolving demoted ${alert.service} failed: ${err?.message ?? String(err)}`,
+        );
       }
     }
   }

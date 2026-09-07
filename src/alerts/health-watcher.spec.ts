@@ -133,6 +133,22 @@ describe('HealthWatcher', () => {
     expect(alerts.fire).not.toHaveBeenCalled();
   });
 
+  it('resolves leftover ServiceUnhealthy when a catalog entry is demoted', async () => {
+    const { watcher, alerts, services } = build();
+    services.getServicesStatus.mockResolvedValue([
+      status({ name: 'speakasap', monitorable: false }),
+      status({ name: 'speakasap-api-gateway', healthy: true, failureKind: undefined }),
+    ] as any);
+    alerts.findActive.mockResolvedValue([
+      { alertname: 'ServiceUnhealthy', service: 'speakasap', fingerprint: 'health:speakasap' },
+    ] as any);
+
+    await watcher.runCheck();
+
+    expect(alerts.fire).not.toHaveBeenCalled();
+    expect(alerts.resolveByFingerprint).toHaveBeenCalledWith('health:speakasap');
+  });
+
   it('expires alerts that have gone stale — nothing re-fired them', async () => {
     // 2026-08-26: an I/O storm opened 238 alerts. Their resolves arrived while
     // monitoring was down, so they could never be closed and sat 'active'
