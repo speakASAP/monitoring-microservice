@@ -124,6 +124,19 @@ export class ErrorLogWatcher {
           ) {
             continue;
           }
+          // Cliplot readiness probes expect a missing-order 404. Payments tags
+          // those with synthetic_probe after 512e2e1; until the logging index
+          // ages out pre-tag samples, match the same orderId patterns here.
+          if (
+            /[?&]orderId=cliplot-readiness-monitor(?:&|$)/i.test(
+              group.sampleMessage || '',
+            ) ||
+            /[?&]orderId=cliplot-[^&\s]*readiness(?:&|$)/i.test(
+              group.sampleMessage || '',
+            )
+          ) {
+            continue;
+          }
           if (group.count < MIN_OCCURRENCES) continue;
 
           const fingerprint = this.fingerprintFor(group);
