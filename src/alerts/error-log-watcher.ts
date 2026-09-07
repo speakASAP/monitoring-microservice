@@ -154,7 +154,23 @@ export class ErrorLogWatcher {
       }
 
       if (trustResolution) {
-        for (const fingerprint of this.active) {
+        // Prefer DB active fingerprints over the in-memory set: a pod restart
+        // empties `this.active`, which would otherwise leave skipped/recovered
+        // ServiceLoggingErrors open forever (the payments Cliplot-probe case).
+        const previouslyActive = new Set<string>(this.active);
+        try {
+          const activeAlerts = await this.alerts.findActive();
+          for (const alert of activeAlerts) {
+            if (alert.alertname !== 'ServiceLoggingErrors') continue;
+            if (!alert.fingerprint) continue;
+            previouslyActive.add(alert.fingerprint);
+          }
+        } catch (err: any) {
+          this.logger.error(
+            `[ErrorLogWatcher] listing active errorlog alerts failed: ${err?.message ?? String(err)}`,
+          );
+        }
+        for (const fingerprint of previouslyActive) {
           if (seen.has(fingerprint)) continue;
           await this.alerts.resolveByFingerprint(fingerprint);
         }

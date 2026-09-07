@@ -153,6 +153,38 @@ describe('ErrorLogWatcher', () => {
     expect(alerts.resolveByFingerprint).toHaveBeenCalled();
   });
 
+  it('resolves leftover ServiceLoggingErrors after a restart emptied the in-memory set', async () => {
+    // Fresh watcher (= empty this.active). DB still has an open probe alert
+    // whose sample we now skip. Without a DB-backed resolve it stays active.
+    logs.fetchErrorSummary.mockResolvedValue(
+      summary({
+        groups: [
+          group({
+            service: 'payments-microservice',
+            count: 50,
+            syntheticProbe: false,
+            sampleMessage:
+              '404 Not Found: GET /payments/status/by-order-id?applicationId=cliplot&orderId=cliplot-readiness-monitor - Payment for application cliplot and order cliplot-readiness-monitor not found',
+          }),
+        ],
+      }),
+    );
+    alerts.findActive.mockResolvedValue([
+      {
+        alertname: 'ServiceLoggingErrors',
+        service: 'payments-microservice',
+        fingerprint: 'errorlog:payments-microservice/old-probe',
+      },
+    ] as any);
+
+    await watcher.runCheck(NOW);
+
+    expect(alerts.fire).not.toHaveBeenCalled();
+    expect(alerts.resolveByFingerprint).toHaveBeenCalledWith(
+      'errorlog:payments-microservice/old-probe',
+    );
+  });
+
   it('does NOT resolve when the index is younger than the window', async () => {
     // The failure this guards against: logging-microservice restarts, its
     // in-memory index is empty, and the watcher announces recovery for
