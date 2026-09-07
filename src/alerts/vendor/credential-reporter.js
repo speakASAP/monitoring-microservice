@@ -152,7 +152,7 @@ async function probeCredential({
  *
  * @param {Object} opts
  * @param {string} opts.monitoringUrl  Base URL of monitoring-microservice.
- * @param {string} opts.ingestToken    Static token accepted by MonitoringIngestGuard.
+ * @param {string} opts.ingestToken    Auth RS256 JWT with internal:monitoring-microservice:ingest.
  * @param {string} opts.principal      Principal this service authenticates as, exactly as auth lists it.
  * @param {string} opts.target         Service that accepted or rejected the credential.
  * @param {ProbeResult} opts.result

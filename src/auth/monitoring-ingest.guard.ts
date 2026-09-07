@@ -1,27 +1,41 @@
-import { CanActivate, ExecutionContext, ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
-import { timingSafeEqual } from 'crypto';
+import {
+  CanActivate,
+  ExecutionContext,
+  ForbiddenException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 
 /**
- * Guards the alert INGEST endpoints (/api/alerts/fire, /api/alerts/resolve).
+ * Roles that authorize alert / credential ingest writes.
  *
- * These are called by machines, not people — the deploy queue posts here — so
- * MonitoringAdminGuard is the wrong gate twice over: it requires a human admin
- * role, and it validates through auth-microservice, which only accepts RS256
- * JWTs. The deploy queue's borrowed NOTIFICATION_SERVICE_TOKEN is a static
- * shared secret; auth-microservice rejects it with
- * "Unsupported token algorithm none; RS256 required" (verified against
- * production 2026-08-26), so a JWT-validating guard here would reject every
- * legitimate call and silently break deploy alerting.
+ * `ingest` is the least privilege for these routes. `global:superadmin` is
+ * deliberately absent: it is a human role, and a service token must never
+ * carry it.
+ */
+const INGEST_ROLES: ReadonlySet<string> = new Set([
+  'internal:monitoring-microservice:ingest',
+]);
+
+/**
+ * Auth RS256 gate for alert ingest and credential-report endpoints.
  *
- * This follows the ecosystem's established static-service-token pattern —
- * notifications-microservice/src/auth/jwt-roles.guard.ts does the same thing:
- * constant-time comparison against a known secret, no JWT round-trip.
+ * Validates Authorization Bearer via POST AUTH_SERVICE_URL/auth/validate and
+ * requires `internal:monitoring-microservice:ingest`.
  *
- * Constant-time comparison matters: a plain === leaks the secret's prefix
- * through timing, one byte at a time.
+ * Static NOTIFICATION_SERVICE_TOKEN / ALERT_INGEST_TOKEN compares are deleted —
+ * not flag-gated. Callers must present a per-pair Auth JWT (env name for
+ * in-pod / deploy-queue senders: MONITORING_INGEST_SERVICE_TOKEN).
  */
 @Injectable()
 export class MonitoringIngestGuard implements CanActivate {
+  private readonly authServiceUrl = (
+    process.env.AUTH_SERVICE_URL || 'http://auth-microservice:3370'
+  ).replace(/\/+$/, '');
+  private readonly authValidateTimeoutMs = Number(
+    process.env.AUTH_VALIDATE_TIMEOUT_MS || 3000,
+  );
+
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
     const header: string | undefined = request.headers?.authorization;
@@ -34,35 +48,67 @@ export class MonitoringIngestGuard implements CanActivate {
       throw new UnauthorizedException('Missing bearer token');
     }
 
-    const accepted = [
-      // The deploy queue borrows monitoring's own per-caller token, which is
-      // present in this pod as NOTIFICATION_SERVICE_TOKEN. Reusing it means no
-      // new credential is minted, rotated, or left to drift out of Vault.
-      { name: 'deploy-queue', secret: process.env.NOTIFICATION_SERVICE_TOKEN },
-      // Optional dedicated secret, if this is ever split off from the borrowed one.
-      { name: 'alert-ingest', secret: process.env.ALERT_INGEST_TOKEN },
-    ].filter((c) => !!c.secret && c.secret.length > 0);
-
-    if (accepted.length === 0) {
-      // Fail CLOSED. No configured secret must never mean "allow everyone".
-      throw new ForbiddenException(
-        'No alert-ingest credential is configured — alert ingest is closed',
-      );
-    }
-
-    const match = accepted.find((c) => this.safeEqual(token, c.secret as string));
-    if (!match) {
+    const roles = await this.validateRoles(token);
+    if (!roles.some((role) => INGEST_ROLES.has(role))) {
       throw new ForbiddenException('Principal is not permitted to write alert state');
     }
 
-    request.user = { id: `service:${match.name}`, roles: [`internal:monitoring-microservice:ingest`] };
+    request.user = {
+      id: 'service:monitoring-ingest',
+      roles: roles.filter((role) => INGEST_ROLES.has(role)),
+    };
     return true;
   }
 
-  private safeEqual(left: string, right: string): boolean {
-    const l = Buffer.from(left);
-    const r = Buffer.from(right);
-    if (l.length !== r.length) return false;
-    return timingSafeEqual(l, r);
+  private async validateRoles(token: string): Promise<string[]> {
+    const controller = new AbortController();
+    const timeoutMs =
+      Number.isFinite(this.authValidateTimeoutMs) && this.authValidateTimeoutMs > 0
+        ? this.authValidateTimeoutMs
+        : 3000;
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+    let response: Response;
+    try {
+      response = await fetch(`${this.authServiceUrl}/auth/validate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token }),
+        signal: controller.signal,
+      });
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.error(
+        JSON.stringify({
+          level: 'error',
+          event: 'monitoring_ingest_auth_validate_unreachable',
+          message: 'Auth validate unreachable during monitoring ingest',
+          timestamp: new Date().toISOString(),
+          error: error instanceof Error ? error.message : String(error),
+        }),
+      );
+      throw new UnauthorizedException('Invalid token');
+    } finally {
+      clearTimeout(timeout);
+    }
+
+    if (!response.ok) {
+      throw new UnauthorizedException('Invalid token');
+    }
+
+    let data: { valid?: boolean; user?: { roles?: unknown } };
+    try {
+      data = (await response.json()) as { valid?: boolean; user?: { roles?: unknown } };
+    } catch {
+      throw new UnauthorizedException('Invalid token');
+    }
+
+    if (!data.valid || !data.user) {
+      throw new UnauthorizedException('Invalid token');
+    }
+
+    return Array.isArray(data.user.roles)
+      ? data.user.roles.filter((role): role is string => typeof role === 'string')
+      : [];
   }
 }

@@ -59,16 +59,18 @@ export class CredentialSelfReporter {
 
   async runReport(): Promise<{ verdict: string; posted: boolean } | null> {
     const token = (process.env.AUTH_SERVICE_TOKEN || '').trim();
-    const ingestToken = (process.env.NOTIFICATION_SERVICE_TOKEN || '').trim();
+    const ingestToken = (process.env.MONITORING_INGEST_SERVICE_TOKEN || '').trim();
 
     if (!ingestToken) {
       // Without the ingest credential the verdict cannot be delivered. Log it
       // rather than silently skipping: a reporter that stops reporting is
       // indistinguishable from a credential that broke.
-      this.logger.error('[CredentialSelfReporter] NOTIFICATION_SERVICE_TOKEN is empty — cannot post');
+      this.logger.error(
+        '[CredentialSelfReporter] MONITORING_INGEST_SERVICE_TOKEN is empty — cannot post',
+      );
       await this.logging.log('error', 'credential_self_report_undeliverable', {
         principal: PRINCIPAL,
-        reason: 'NOTIFICATION_SERVICE_TOKEN is empty',
+        reason: 'MONITORING_INGEST_SERVICE_TOKEN is empty',
       });
       return null;
     }

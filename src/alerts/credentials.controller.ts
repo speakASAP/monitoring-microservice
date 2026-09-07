@@ -11,10 +11,8 @@ export class CredentialsController {
   /**
    * Machine ingest: a consumer posts the verdict on its own credential.
    *
-   * Gated by MonitoringIngestGuard, the same static-token gate the deploy queue
-   * uses. A JWT-validating guard would be wrong here for the reason written up
-   * in that guard: several legitimate machine callers hold static service
-   * tokens, not RS256 JWTs, and would all be rejected.
+   * Gated by MonitoringIngestGuard (Auth RS256 Bearer +
+   * internal:monitoring-microservice:ingest via POST /auth/validate).
    */
   @Post('report')
   @UseGuards(MonitoringIngestGuard)

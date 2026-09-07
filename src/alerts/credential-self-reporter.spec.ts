@@ -20,7 +20,7 @@ describe('CredentialSelfReporter', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     process.env.AUTH_SERVICE_TOKEN = 'token';
-    process.env.NOTIFICATION_SERVICE_TOKEN = 'ingest';
+    process.env.MONITORING_INGEST_SERVICE_TOKEN = 'ingest-jwt';
   });
 
   afterEach(() => {
@@ -76,7 +76,7 @@ describe('CredentialSelfReporter', () => {
   });
 
   it('logs loudly when the ingest credential is missing, rather than skipping', async () => {
-    process.env.NOTIFICATION_SERVICE_TOKEN = '';
+    process.env.MONITORING_INGEST_SERVICE_TOKEN = '';
     const { reporter, logging } = build();
 
     const out = await reporter.runReport();
@@ -85,7 +85,7 @@ describe('CredentialSelfReporter', () => {
     expect(logging.log).toHaveBeenCalledWith(
       'error',
       'credential_self_report_undeliverable',
-      expect.objectContaining({ reason: expect.stringContaining('NOTIFICATION_SERVICE_TOKEN') }),
+      expect.objectContaining({ reason: expect.stringContaining('MONITORING_INGEST_SERVICE_TOKEN') }),
     );
   });
 
