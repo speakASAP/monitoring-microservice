@@ -107,6 +107,24 @@ describe('ErrorLogWatcher', () => {
     expect(alerts.fire).not.toHaveBeenCalled();
   });
 
+  it('does not alert on Cliplot readiness missing-order 404s without the probe flag', async () => {
+    logs.fetchErrorSummary.mockResolvedValue(
+      summary({
+        groups: [
+          group({
+            service: 'payments-microservice',
+            count: 50,
+            syntheticProbe: false,
+            sampleMessage:
+              '404 Not Found: GET /payments/status/by-order-id?applicationId=cliplot&orderId=cliplot-readiness-monitor - Payment for application cliplot and order cliplot-readiness-monitor not found',
+          }),
+        ],
+      }),
+    );
+    await watcher.runCheck(NOW);
+    expect(alerts.fire).not.toHaveBeenCalled();
+  });
+
   it('ignores a one-off error', async () => {
     // Roughly five transient failures per persistent one; alerting on each
     // would mute the channel, which is how the original incident stayed

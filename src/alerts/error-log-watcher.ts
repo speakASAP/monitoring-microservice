@@ -127,11 +127,13 @@ export class ErrorLogWatcher {
           // Cliplot readiness probes expect a missing-order 404. Payments tags
           // those with synthetic_probe after 512e2e1; until the logging index
           // ages out pre-tag samples, match the same orderId patterns here.
+          // Samples embed the URL in free text ("orderId=… - Payment…"), so
+          // terminate on word boundary rather than only & or EOS.
           if (
-            /[?&]orderId=cliplot-readiness-monitor(?:&|$)/i.test(
+            /[?&]orderId=cliplot-readiness-monitor\b/i.test(
               group.sampleMessage || '',
             ) ||
-            /[?&]orderId=cliplot-[^&\s]*readiness(?:&|$)/i.test(
+            /[?&]orderId=cliplot-[^\s&]*readiness\b/i.test(
               group.sampleMessage || '',
             )
           ) {
