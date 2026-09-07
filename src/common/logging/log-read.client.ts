@@ -8,6 +8,8 @@ export interface ErrorGroup {
   firstSeen: string;
   lastSeen: string;
   sampleMessage: string;
+  /** Probe/test traffic — indexed but must not raise ServiceLoggingErrors. */
+  syntheticProbe?: boolean;
 }
 
 export interface ErrorSummary {

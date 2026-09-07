@@ -112,6 +112,18 @@ export class ErrorLogWatcher {
       for (const group of summary.groups) {
         try {
           if (IGNORED_SERVICES.has(group.service)) continue;
+          // Classified probe/test traffic stays in the index (visible) but must
+          // not raise ServiceLoggingErrors. Unmatched-route scanner 404s
+          // (/.git/config) are the same class even when an older sender omitted
+          // the flag. Real faults keep alerting.
+          if (group.syntheticProbe) continue;
+          if (
+            /(?:^| - )Cannot (GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS) \S/i.test(
+              group.sampleMessage || '',
+            )
+          ) {
+            continue;
+          }
           if (group.count < MIN_OCCURRENCES) continue;
 
           const fingerprint = this.fingerprintFor(group);

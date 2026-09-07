@@ -80,6 +80,33 @@ describe('ErrorLogWatcher', () => {
     expect(notifications.sendTelegram).toHaveBeenCalled();
   });
 
+  it('does not alert on classified synthetic/probe traffic', async () => {
+    logs.fetchErrorSummary.mockResolvedValue(
+      summary({
+        groups: [group({ count: 50, syntheticProbe: true, sampleMessage: '404 probe expected' })],
+      }),
+    );
+    await watcher.runCheck(NOW);
+    expect(alerts.fire).not.toHaveBeenCalled();
+  });
+
+  it('does not alert on unmatched-route scanner 404s even without the probe flag', async () => {
+    logs.fetchErrorSummary.mockResolvedValue(
+      summary({
+        groups: [
+          group({
+            service: 'payments-microservice',
+            count: 264,
+            syntheticProbe: false,
+            sampleMessage: '404 Not Found: GET /.git/config - Cannot GET /.git/config',
+          }),
+        ],
+      }),
+    );
+    await watcher.runCheck(NOW);
+    expect(alerts.fire).not.toHaveBeenCalled();
+  });
+
   it('ignores a one-off error', async () => {
     // Roughly five transient failures per persistent one; alerting on each
     // would mute the channel, which is how the original incident stayed
