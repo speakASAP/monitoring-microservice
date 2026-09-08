@@ -132,8 +132,12 @@ The daily digest outage that preceded this lane is resolved; its historical impl
   anonymous gives `Missing or invalid Authorization header`; the monitor's `JWT_TOKEN` (HS256,
   valid structure, unexpired - though only until 2026-09-11) gives `Token validation failed`; and
   the internal-service path gives `Unknown internal service name 'catalog-contract-monitor'`.
-  The catalog auth hardening of 2026-09-01 (`3fb296a`, `fc2f81c`, `c3614b5`) tightened both
-  credential paths without updating this caller.
+  **Prohibited protocol note:** that `JWT_TOKEN` HS256 path is not allowed S2S — machine
+  callers must use an Auth-issued RS256 per-pair principal per
+  [`SERVICE_IDENTITY_CONSUMER_STANDARD.md`](../auth-microservice/docs/SERVICE_IDENTITY_CONSUMER_STANDARD.md).
+  Do not treat this incident write-up as a live mint/how-to. The catalog auth hardening of
+  2026-09-01 (`3fb296a`, `fc2f81c`, `c3614b5`) tightened both credential paths without
+  updating this caller.
 
 - **DONE 2026-09-04: swept every `/api/logs` caller in the ecosystem. The payload defect is rare;
   a missing credential is the real epidemic.** 33 repos contain a caller. Verified with

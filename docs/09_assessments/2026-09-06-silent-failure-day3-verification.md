@@ -457,7 +457,7 @@ again on 09-11.
 This remains the strongest argument in the whole lane **against** blanket autonomy: the
 correct remedy is a deliberate security decision about which callers may reach
 `/api/products/search`, made by commits explicitly written (`3fb296a`, `fc2f81c`) to force
-a human to make it. An agent "fixing the 401" by widening an allowlist would undo a
+a human to make it. An agent "fixing the 401" by widening a shared-secret allowlist (instead of SPOT RS256 pair principal per [`SERVICE_IDENTITY_CONSUMER_STANDARD.md`](../../../auth-microservice/docs/SERVICE_IDENTITY_CONSUMER_STANDARD.md)) would undo a
 deliberate hardening. The ledger's `autoFixEligible: false` encodes exactly this judgement
 and is the right primitive.
 

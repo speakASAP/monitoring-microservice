@@ -408,7 +408,7 @@ deployed services — not a new application, which matches the owner's constrain
   a *security allowlist change* in `catalog-microservice` — deciding that
   `catalog-contract-monitor` is a legitimate caller and what roles it should hold. That is
   precisely the judgement `b99a38c` and `3fb296a` were written to force a human to make.
-  An agent that "fixes the 401" by widening an allowlist would be undoing a deliberate
+  An agent that "fixes the 401" by widening a shared-secret allowlist (instead of SPOT RS256 pair principal per [`SERVICE_IDENTITY_CONSUMER_STANDARD.md`](../../../auth-microservice/docs/SERVICE_IDENTITY_CONSUMER_STANDARD.md)) would be undoing a deliberate
   security hardening. **A blanket auto-fix policy would have made this incident worse.**
 - Two of the three catalog auth commits are `fix(security)`. The blast radius of an
   automated change on that surface is the whole catalog.

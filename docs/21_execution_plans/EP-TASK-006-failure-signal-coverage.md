@@ -141,15 +141,16 @@ and the failure path is automatic. Phase 5b is therefore rewritten around a
 
 **One risk the owner should hold explicitly** (raised once here, not re-litigated): the
 incident that started this work is a case where the correct fix is a deliberate
-security-allowlist judgement, and where the cheapest fix — widening an allowlist to an
-admin-capable identity — would reverse a `fix(security)` hardening while making the symptom
-disappear (`09-05 §3.2`). **An outcome gate cannot catch that**, because the wrong fix
-passes the outcome test: the 401 stops, the service works, the errors vanish.
+service-identity judgement per [`SERVICE_IDENTITY_CONSUMER_STANDARD.md`](../../../auth-microservice/docs/SERVICE_IDENTITY_CONSUMER_STANDARD.md), and where the cheapest wrong fix — inventing a
+shared-secret allowlist or self-asserted caller header instead of an Auth RS256 pair
+principal — would reverse a `fix(security)` hardening while making the symptom disappear
+(`09-05 §3.2`). **An outcome gate cannot catch that**, because the wrong fix passes the
+outcome test: the 401 stops, the service works, the errors vanish.
 
 The `auto_fix_eligible` flag in the Phase 1 ledger is therefore retained as the containment
 primitive, and is now the *only* one. Recommended default: surfaces whose last change was a
-`fix(security)` commit, and any surface touching auth guards, allowlists, RBAC or token
-issuance, are marked ineligible and produce an alert plus a goal for a human, but no
+`fix(security)` commit, and any surface touching auth guards, service-identity provisioning,
+RBAC or token issuance, are marked ineligible and produce an alert plus a goal for a human, but no
 autonomous commit. Everything else runs the full loop. **If the owner wants those included
 too, that is a separate explicit decision** — it should not arrive by default.
 
@@ -562,13 +563,12 @@ The trigger, not the work. It belongs in `catalog-microservice`
 alerting lane is not blocked on it, and so whoever takes it knows it is **two fixes, not
 one** (`09-05 §3.1`):
 
-1. The internal-service path — `catalog-authorized-smoke` is not in the guard's 11-name
-   allowlist, and `CATALOG_INTERNAL_SERVICE_NAMES` is absent from the ConfigMap. **The
-   obvious fix is the dangerous one**: the monitor's `JWT_TOKEN` carries `catalog:write`
-   and two admin roles, so a careless remedy widens the shared-secret allowlist to an
-   admin-capable identity. Decide the minimum role per contract first (`09-05 §3.2`).
-2. The bearer path — returns 401 `Token validation failed` **today**, not merely on its
-   2026-09-11 expiry. Fixing only path 1 leaves a credential that is already dead.
+1. Machine identity — provision a Catalog-bound Auth RS256 `(caller → catalog-microservice)`
+   pair principal and least-privilege role per [`SERVICE_IDENTITY_CONSUMER_STANDARD.md`](../../../auth-microservice/docs/SERVICE_IDENTITY_CONSUMER_STANDARD.md). Do **not** remediate by widening a
+   shared-secret / name allowlist or accepting self-asserted service headers. The monitor must
+   not reuse an admin-capable human token as S2S identity (`09-05 §3.2`).
+2. Credential lifetime — rotate/remint the pair Bearer before expiry and verify an authenticated
+   call succeeds. Expiry alone is not acceptance evidence under the SPOT.
 
 Its `product-search` verdict is also the natural end-to-end test for Phase 2: a real,
 currently-failing job whose alert content can be checked against a known-correct answer.

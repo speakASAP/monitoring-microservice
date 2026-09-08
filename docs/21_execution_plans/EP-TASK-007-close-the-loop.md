@@ -121,16 +121,15 @@ Two independent faults. Fixing one leaves the other; fixing only the token means
 breaks again on 09-11 for a different reason.
 
 **A1 — The `401` on `/api/products/search`.** The 2026-09-01 hardening (`3fb296a`,
-`fc2f81c`) tightened both credential paths without updating this caller. The remedy is a
-deliberate decision about whether `catalog-contract-monitor` is a legitimate caller and
-what roles it should hold — decided in `src/auth/catalog-auth.guard.ts`
-(`rolesForServiceName` L184-233, default allowlist L260-276).
+`fc2f81c`) tightened machine auth without updating this caller. Remediation is SPOT-only:
+provision/remint an Auth RS256 `(catalog-contract-monitor → catalog-microservice)` pair
+principal with a least-privilege Catalog role per [`SERVICE_IDENTITY_CONSUMER_STANDARD.md`](../../../auth-microservice/docs/SERVICE_IDENTITY_CONSUMER_STANDARD.md). Do not widen a shared-secret
+or name allowlist and do not treat self-asserted headers as identity.
 
-> **This is a `fix(security)` surface.** The cheapest fix — widening the allowlist to an
-> admin-capable identity — would reverse a deliberate hardening while making the symptom
-> disappear. EP-TASK-006 §D3 records that an outcome gate cannot catch this, because the
-> wrong fix passes every outcome test. Agent A proposes the allowlist change and its
-> reasoning; **a human approves the specific roles granted before it merges.** This is the
+> **This is a `fix(security)` surface.** Inventing an allowlist bypass or admin-capable
+> shared credential would reverse hardening while making the symptom disappear.
+> EP-TASK-006 §D3 records that an outcome gate cannot catch this. Agent A proposes the
+> pair principal + role; **a human approves the specific role before merge.** This is the
 > one human gate in the whole plan and it is deliberate.
 
 **A2 — Token rotation.** `JWT_TOKEN` in `catalog-microservice-secret` expires
@@ -146,7 +145,7 @@ right reasons and that a *passing* run is distinguishable from a *skipped* one.
 - `VA-1` `kubectl get cronjob catalog-contract-monitor -n statex-apps -o jsonpath='{.status.lastSuccessfulTime}'` moves to a timestamp after the fix deploys.
 - `VA-2` `CronJobNotSucceeding / catalog-contract-monitor` transitions to `resolved` in `monitoring.alerts` **without manual intervention** — this is the end-to-end proof that detection, resolution and recovery-announcement all work.
 - `VA-3` decoded `exp` of the new token is ≥ 30 days out. Value never printed.
-- `VA-4` a human has signed off on the specific roles granted in A1. Record who and when.
+- `VA-4` a human has signed off on the SPOT pair principal role granted in A1. Record who and when.
 
 ---
 

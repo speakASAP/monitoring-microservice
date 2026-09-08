@@ -8,6 +8,9 @@ Read `BUSINESS.md`, `SYSTEM.md`, `TASKS.md`, `STATE.json`, the constitution, vis
 
 Repository intent and evidence are authoritative locally; reusable adoption standards and validation semantics are owned by `intent-preservation-system`.
 
+## Service-to-service authentication
+For machine service identity, follow the sole canonical [`SERVICE_IDENTITY_CONSUMER_STANDARD.md`](../auth-microservice/docs/SERVICE_IDENTITY_CONSUMER_STANDARD.md). It is not reproduced here.
+
 ## Intent Preservation System
 
 Preserve Vision -> Goal Impact -> System -> Feature -> Task -> Execution Plan -> Code -> Validation. Use `ips-adoption.json` and canonical artifact paths for adoption evidence.
