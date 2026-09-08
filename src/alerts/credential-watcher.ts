@@ -188,10 +188,7 @@ export class CredentialWatcher {
    * Reads the inventory using this service's OWN per-pair principal
    * (`svc-monitoring-microservice--auth-microservice`, RS256).
    *
-   * Deliberately not the shared `INTERNAL_SERVICE_TOKEN` static string. That
-   * credential carries no identity, so it can neither be enumerated nor
-   * attributed on rejection — the watcher would be observing the fleet with the
-   * one credential shape it cannot observe. With a real principal, this
+   * Uses this service's Auth-issued per-pair principal only.
    * watcher's own credential appears in its own matrix and is probed like any
    * other. See the plan's Task E.
    */
@@ -205,7 +202,6 @@ export class CredentialWatcher {
       timeout: INVENTORY_TIMEOUT_MS,
       headers: {
         Authorization: `Bearer ${token}`,
-        'x-service-name': 'monitoring-microservice',
       },
     });
 
