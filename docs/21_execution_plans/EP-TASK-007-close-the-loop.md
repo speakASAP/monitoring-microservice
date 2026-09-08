@@ -253,12 +253,11 @@ the order below; each step is independently testable in shadow.
 **D1-step — Machine identity for the runlayer call.** `POST /projects/:projectId/goals` is
 behind `JwtGuard` (`goals.controller.ts:10,42`). Monitoring needs a machine identity per
 [`SERVICE_IDENTITY_CONSUMER_STANDARD.md`](../../../auth-microservice/docs/SERVICE_IDENTITY_CONSUMER_STANDARD.md)
-— the canonical standard, which the ecosystem memory records that 14 services currently
-violate with static-token guards. **Do not add a fifteenth.** Also required: which
-`projectId` receives these goals, and the dedup key semantics
-(`fingerprint`, per §5b) composed with runlayer's `LOOPING_GOAL_CYCLE_LIMIT`. EP-TASK-006
-flags that these two dedup mechanisms have never been composed and to budget it as real
-work.
+only — one Auth-issued `(monitoring-microservice -> runlayer)` RS256 principal; do not
+invent a parallel credential. Also required: which `projectId` receives these goals, and
+the dedup key semantics (`fingerprint`, per §5b) composed with runlayer's
+`LOOPING_GOAL_CYCLE_LIMIT`. EP-TASK-006 flags that these two dedup mechanisms have never
+been composed and to budget it as real work.
 
 **D2-step — The verify loop, V1–V4.** Specified in EP-TASK-006 §5b; implement as written.
 Three constraints carry extra weight and must not be softened:

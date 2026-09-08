@@ -302,10 +302,9 @@ adding a third daily sender to the same chat compounds it.
 thing to what is being asked for, and its design decisions are already reasoned and
 battle-tested:
 
-- **Alert on transitions, not standing state.** *"38 HS256 mounts exist today... re-sending
-  all of them daily would bury the channel, and a channel people mute is worse than no
-  channel at all. The report is where you read current state; the guard tells you when it
-  got worse."*
+- **Alert on transitions, not standing state.** Standing inventories (expired mounts,
+  algorithm mismatch, missing keys) belong in the report; the guard only pages when
+  state gets worse. Re-sending a full inventory daily buries the channel.
 - **Deadlines re-alert every run.** *"A token 3 days out that was 4 days out yesterday is
   not 'no news', it is a deadline."* (`TOKEN_HEALTH_URGENT_DAYS`, default 7.)
 - **Baseline diff in `$XDG_STATE_HOME`**, keyed on `app|var` and explicitly *not* on the
